@@ -95,7 +95,7 @@
                 <span class="burst-text">&#x1F3C6;</span>
             </div>
             <h1 class="end-title">Geschafft!</h1>
-            <p class="end-subtitle">Ihr habt den AI Escape Room gemeistert!</p>
+            <p class="end-subtitle">Gratulation, ihr habt den AI Escape Room gemeistert!</p>
             <div class="end-card comic-panel">
                 <div class="abi-intro">
                     <div class="abi-mini">&#x1F916;</div>
@@ -108,11 +108,36 @@
                     <div class="stat-item"><span class="stat-icon">&#x2B50;</span><span class="stat-label">Punkte</span><span class="stat-valü" id="end-points"></span></div>
                     <div class="stat-item"><span class="stat-icon">&#x23F1;&#xFE0F;</span><span class="stat-label">Zeit</span><span class="stat-valü" id="end-time"></span></div>
                     <div class="stat-item"><span class="stat-icon">&#x1F4A1;</span><span class="stat-label">Hinweise</span><span class="stat-valü" id="end-hints"></span></div>
+                    <div class="stat-item highlight-rank"><span class="stat-icon">&#x1F3C5;</span><span class="stat-label">Platzierung</span><span class="stat-valü" id="end-rank"></span></div>
                 </div>
                 <div class="end-buttons">
-                    <button class="btn btn-primary comic-btn" onclick="copyResult()">&#x1F4CB; Ergebnis kopieren</button>
-                    <button class="btn btn-secondary comic-btn" onclick="resetGame()">&#x1F504; Nochmal spielen</button>
+                    <button class="btn btn-primary comic-btn" onclick="showLeaderboard()">&#x1F3C6; Rangliste anzeigen</button>
+                    <button class="btn btn-secondary comic-btn" onclick="copyResult()">&#x1F4CB; Ergebnis kopieren</button>
+                    <button class="btn btn-secondary comic-btn" onclick="resetGame()">&#x1F195; Neues Team starten</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== LEADERBOARD SCREEN ===================== -->
+    <div id="leaderboard-screen" class="screen">
+        <div class="leaderboard-container">
+            <div class="comic-burst lb-burst">
+                <span class="burst-text">&#x1F3C6;</span>
+            </div>
+            <h1 class="lb-title">Rangliste</h1>
+            <p class="lb-subtitle">AI Playground Day at SWICA</p>
+            <div class="lb-abi-comment comic-panel">
+                <div class="abi-mini">&#x1F916;</div>
+                <p id="lb-abi-text">Abi hat gerechnet. Und diesmal sogar richtig.</p>
+            </div>
+            <div id="lb-cleanup-msg" class="lb-cleanup-msg hidden">Alte Ergebnisse wurden aus der Rangliste entfernt.</div>
+            <div id="leaderboard-list" class="leaderboard-list">
+                <!-- Rendered by JS -->
+            </div>
+            <div class="lb-buttons">
+                <button class="btn btn-primary comic-btn" onclick="renderLeaderboard()">&#x1F504; Rangliste aktualisieren</button>
+                <button class="btn btn-secondary comic-btn" onclick="resetGame()">&#x1F195; Neues Team starten</button>
             </div>
         </div>
     </div>
@@ -137,6 +162,21 @@
                     <button class="btn btn-bonus" onclick="addBonus(5, 'Lustigste Antwort')">+5 Lustigste Antwort</button>
                     <button class="btn btn-bonus" onclick="addBonus(5, 'Beste Teamarbeit')">+5 Beste Teamarbeit</button>
                     <button class="btn btn-bonus" onclick="addBonus(5, 'Dramatischster Ruf')">+5 Dramatischster Ruf</button>
+                </div>
+            </div>
+            <div class="admin-section">
+                <h3>Teams der letzten 2 Stunden</h3>
+                <div id="admin-teams"></div>
+            </div>
+            <div class="admin-section">
+                <h3>Archiv / &auml;ltere Eintr&auml;ge</h3>
+                <div id="admin-teams-archive"></div>
+            </div>
+            <div class="admin-section">
+                <h3>Rangliste verwalten</h3>
+                <div class="bonus-buttons">
+                    <button class="btn btn-danger" onclick="adminClearOld()">&#x1F9F9; Nur alte Ergebnisse l&ouml;schen</button>
+                    <button class="btn btn-danger" onclick="adminResetLeaderboard()">&#x1F5D1;&#xFE0F; Alle Ergebnisse l&ouml;schen</button>
                 </div>
             </div>
             <div class="admin-section">
