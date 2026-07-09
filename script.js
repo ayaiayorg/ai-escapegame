@@ -1,981 +1,1165 @@
-﻿/* ============================================================
-   AI ESCAPE ROOM - GAME LOGIC
-   
-   KONFIGURATION:
-   - Alle Rätsel im Array STATIONS
-   - Abi-Kommentare in ABI_COMMENTS
-   - Fehlermeldungen in ERROR_MESSAGES
-   - Fun-Tasks in FUN_TASKS
-   - Alles einfach anpassbar!
-   ============================================================ */
+/* =========================================================================
+   AI BUSINESS ESCAPE ROOM – Spiellogik
+   AI Playground Day at SWICA
+   -------------------------------------------------------------------------
+   ANPASSEN LEICHT GEMACHT:
+   - Alle Aufgaben, Lösungen, Hinweise, Punkte und Texte stehen im
+     Bereich "SPIEL-KONFIGURATION" (weiter unten). Nur dort müsst ihr etwas
+     ändern, um Inhalte anzupassen.
+   ========================================================================= */
 
-// ============================================================
-// ABI KOMMENTARE - Hier anpassen
-// ============================================================
+/* =========================================================================
+   1) SPIEL-KONFIGURATION  (hier alles bearbeitbar)
+   ========================================================================= */
 
-const ABI_COMMENTS = {
-    greeting: "Wenn ihr Fragen habt, fragt mich ruhig. Aber denkt daran: Ich bin eine KI, kein Orakel. Manchmal antworte ich mit einem Hinweis, manchmal mit einem Witz, und manchmal... gar nicht. Viel Glück! \uD83E\uDD16",
-    correct: [
-        "Sehr gut! Diese Tür hat sich geöffnet, ohne dass jemand ein Ticket schreiben musste.",
-        "Korrekt! Meine Schaltkreise freuen sich. Das passiert selten.",
-        "Richtig! Ihr seid besser als mein letztes Software-Update.",
-        "Perfekt! Ich würde klatschen, aber ich habe keine Hände."
-    ],
-    wrong: [
-        "Fast richtig. Aber nur fast. Meine digitalen Augenbrauen sind skeptisch.",
-        "Die KI ist verwirrt und braucht kurz einen Kaffee.",
-        "Dieser Code öffnet leider nur die Tür zum Druckerraum. Und glaubt mir, da wollt ihr nicht hin.",
-        "Die Antwort wurde von der Kaffeemaschine abgelehnt. Sie ist streng, aber gerecht.",
-        "Sehr kreativ und gewagt. Leider falsch. Aber hey, ich mag euren Stil!",
-        "Ich habe noch nie eine so schlechte Antwort gesehen."
-    ],
-    hint: [
-        "Hinweis aktiviert. Viel Spass im Arbon!",
-        "Ich helfe ja gerne, aber das kostet euch 5 Punkte. Wirtschaftlichkeit!",
-        "Ein Hinweis, frisch aus meiner ausserirdischenDatenbank. Bitte schön."
-    ],
-    stationComplete: [
-        "Station geschafft! Weiter so, bevor mein Akku leer wird.",
-        "Geschafft! Ich bin fast stolz. Fast.",
-        "Nächste Station freigeschaltet. Ihr seid noch nicht draussen!",
-        "Sehr gut. Das Labyrinth wird nervös."
-    ],
-    ending: "Gratulation! Ihr seid aus dem digitalen Labyrinth entkommen. Die AI ist beeindruckt. Die Kaffeemaschine auch."
+// Punkte-Einstellungen
+const CONFIG = {
+    pointsPerBlock: 5,      // Punkte pro gelöstem Block
+    pointsFinalCode: 10,    // Punkte für den finalen Code
+    bonusPoints: 5,         // Bonus für schnellstes Team (nur im Admin vergebbar)
+    maxPoints: 35,          // Maximal erreichbare Punktzahl
+    adminPassword: 'abi-admin',                 // Passwort für den Adminbereich
+    recentWindowMs: 2 * 60 * 60 * 1000,         // 2 Stunden für die Rangliste
+    storageKey: 'swica_escape_runs'             // localStorage-Schlüssel
 };
 
-// ============================================================
-// LEADERBOARD ABI-KOMMENTARE
-// ============================================================
-
-const LEADERBOARD_COMMENTS = [
-    "Abi hat gerechnet. Und diesmal sogar richtig.",
-    "Die Kaffeemaschine ist beeindruckt.",
-    "Diese Teams haben das digitale Labyrinth überlebt.",
-    "Hier sind die mutigsten Entkommenen. Respekt!",
-    "Eine Rangliste, sauber sortiert. Wie meine Schaltkreise."
-];
-
-// ============================================================
-// LUSTIGE FEHLERMELDUNGEN
-// ============================================================
-
-const ERROR_MESSAGES = [
-    "Die KI ist verwirrt und braucht kurz einen Kaffee. \u2615",
-    "Fast richtig. Aber nur fast. Abi runzelt die digitalen Augenbrauen. \uD83E\uDD28",
-    "Dieser Code öffnet leider nur die Tür zum Druckerraum. \uD83D\uDDA8\uFE0F",
-    "Die Antwort wurde von der Kaffeemaschine abgelehnt. \u274C",
-    "Mutig. Kreativ. Leider falsch. \uD83D\uDE05",
-    "Abi sagt: Ich habe schon schlechtere Antworten gesehen. Aber nicht viele. \uD83E\uDD16"
-];
-
-// ============================================================
-// FUN TASKS nach jeder Station
-// ============================================================
-
-const FUN_TASKS = [
-    "Feiert euren Erfolg mit einem dramatischen Teamnamen-Intro! Stellt euch vor, ihr wärt in einer Gameshow. \uD83C\uDFA4",
-    "Erfindet in 20 Sekunden einen schlechten AI-Werbeslogan. Je schlechter, desto besser! \uD83D\uDCE2",
-    "Bestimmt eine Person im Team zum offiziellen Chief Prompt Officer (CPO). Krone ist optional. \uD83D\uDC51",
-    "Ruft euren finalen Code so dramatisch, als wäre es das Staffelfinale einer Serie! \uD83C\uDFAC"
-];
-
-// ============================================================
-// STATIONEN - Rätsel, Lösungen, Hinweise
-// ============================================================
-
-const STATIONS = [
+// Die 4 Blöcke des Escape Rooms
+const BLOCKS = [
+    /* --------------------------- BLOCK 1 --------------------------- */
     {
         id: 1,
-        title: "Die geheimnisvolle E-Mail",
-        icon: "\uD83D\uDCE7",
-        story: "Abi projiziert eine flackernde E-Mail auf den Bildschirm. Der Absender ist unbekannt. Der Betreff lautet: \u00ABNicht alles, was klar wirkt, führt zum Ausgang.\u00BB",
-        task: "Lest die E-Mail genau. Irgendwo darin verbirgt sich ein Hinweis auf das Lösungswort. Nutzt AI, um den Text zu analysieren.",
-        content: "<p>In alten Systemen ist Ordnung selten dort, wo man sie zuerst vermutet; oft liegt ein Schleier darüber, und nur wer genau hinsieht, erkennt im scheinbaren Chaos das entscheidende Element, denn Nebel verschleiert meist nur das Offensichtliche.</p><p>Wer beginnt zu suchen, folgt oft den lautesten Spuren, doch diese führen selten ans Ziel, weil sie Erwartungen bedienen statt sie zu prüfen; Hinter klaren Mustern verbirgt sich selten die wahre Struktur.</p><p>Ein Ansatz kann überzeugend wirken und dennoch falsch sein, weil er unbemerkt Regeln übernimmt, die nie Teil der Aufgabe waren; wirklich kritisch wird es erst, wenn Fremde Logik unreflektiert übernommen wird.</p><p>Viele übersehen, dass nicht alles gleich gewichtet werden darf, denn Unterschiede tragen Bedeutung, auch wenn sie subtil sind, und oft erkennt man die Verbindung erst spät, wenn die richtigen Fäden zusammengeführt werden.</p><p>Inhalte scheinen wichtiger als Form, doch genau das ist häufig ein Irrtum, da Lösungen sich strukturell zeigen und nicht semantisch; wer nur am Rand sucht, verpasst, dass Ränder selten die Antwort tragen.</p><p>Wiederholungen wirken wie Signale, doch sie täuschen oft mehr, als sie helfen, weil sie Aufmerksamkeit binden ohne Richtung zu geben; solche Effekte gleichen eher widerhallenden Echos als echten Hinweisen.</p><p>Ein klarer Gedanke vermittelt Sicherheit, doch Sicherheit ist kein Beweis, und wer sich zu früh festlegt, wird blind für Alternativen; genau hier ist Vorsicht entscheidend.</p><p>Struktur entsteht nicht aus Menge, sondern aus Auswahl, und wer alles gleich behandelt, verliert den Blick für Relevanz; oft zeigt sich erst spät, warum gerade Enden entscheidend sein können.</p><p>Lineares Lesen führt selten zum Ziel, weil es Brüche ignoriert, und genau in solchen Übergängen liegt oft der Schlüssel; wer quer denkt, erkennt schneller, wie wichtig Quer verlaufende Muster sind.</p><p>Komplexität wirkt beeindruckend, doch sie ist selten notwendig, und in vielen Fällen genügt eine kleine Anpassung, um Klarheit zu schaffen, denn sobald sich etwas Verschiebt, verändert sich die Perspektive.</p><p>Ein Ergebnis kann vollständig erscheinen und dennoch falsch sein, weil der letzte Schritt fehlt, und genau dieser wird oft übersehen; deshalb sollte der Fokus nie zu früh verloren gehen.</p><p>Wer seine Annahmen nicht hinterfragt, bewegt sich im Kreis, auch wenn Fortschritt scheinbar sichtbar ist, und nur durch aktive Kontrolle lässt sich erkennen, wann es nötig ist zu Prüfen.</p><p>Am Ende wirkt alles offensichtlich, doch dieser Eindruck entsteht erst nach dem entscheidenden Perspektivwechsel; denn manchmal zeigt sich die Lösung erst durch Umkehr.</p>",
-        solution: "AUSSERIRDISCH",
-        altSolutions: ["AUSSERIRDISCH"],
-        hints: [
-            "Abi flüstert: Der Inhalt ist Ablenkung. Die Struktur verrät das Geheimnis &ndash; schaut euch an, wie der Text aufgebaut ist.",
-            "Abi sagt: 13 Absätze, 13 Buchstaben. Was verraten die Anfangsbuchstaben, wenn man sie rückwärts liest?"
+        title: 'Die geheimnisvolle E-Mail',
+        icon: '📧',
+        duration: '10 Minuten',
+        story: 'Abi zeigt eine lange, unübersichtliche E-Mail. Darin stecken viele Informationen – aber nur einige sind wirklich relevant.',
+        task: [
+            'Fasst die E-Mail mit AI zusammen.',
+            'Filtert die wichtigsten Aufgaben heraus.',
+            'Erkennt die Prioritäten.',
+            'Schreibt einen professionellen Antwortentwurf.',
+            'Findet die drei wichtigsten Stichworte und leitet daraus den Code ab.'
         ],
-        pointsPerStation: 25,
-        hintCost: 5
+        riddle: {
+            type: 'text',
+            label: 'E-Mail',
+            content:
+`Betreff: Mehrere offene Punkte – bitte dringend prüfen
+
+Hallo zusammen
+
+Ich habe verschiedene Rückmeldungen aus dem Bereich erhalten und fasse sie hier kurz zusammen, auch wenn es etwas unübersichtlich geworden ist. Erstens gibt es mehrere offene Rechnungen, bei denen noch unklar ist, ob alle Beträge korrekt erfasst wurden. Zweitens wurde erwähnt, dass gewisse Excel-Auswertungen manuell nachbearbeitet werden müssen, weil doppelte Einträge enthalten sind. Drittens gibt es Rückfragen zu einer internen E-Mail-Vorlage, die aktuell zu lang und nicht klar genug formuliert ist.
+
+Zusätzlich wurde im letzten Meeting festgehalten, dass repetitive Aufgaben stärker automatisiert werden sollen. Besonders wichtig sind aktuell drei Themen: Rechnungskontrolle, Excel-Bereinigung und E-Mail-Kommunikation. Bitte priorisiert diese Punkte und schlagt vor, wie AI oder Copilot unterstützen könnten.
+
+Freundliche Grüsse
+Business Coordination`
+        },
+        answerType: 'text',                 // Freitext, exakter Vergleich
+        acceptedAnswers: ['REX'],           // akzeptierte Lösungen
+        blockHint: 'REX',                   // Hinweis für den finalen Code
+        answerLabel: 'Der Block-Code (3 Buchstaben)',
+        answerPlaceholder: 'z. B. XYZ',
+        hints: [
+            'Abi sagt: Nicht jede Information in der E-Mail ist gleich wichtig. Suche die drei zentralen Arbeitsthemen.',
+            'Abi sagt: Achte auf Rechnung, Excel und E-Mail. Daraus entsteht der erste Hinweis.',
+            'Abi sagt: Für den Code wird Excel als X abgekürzt.'
+        ],
+        successMsg: 'Abi sagt: Sehr gut. Ihr habt das E-Mail-Chaos gezähmt. Outlook wäre stolz.'
     },
+
+    /* --------------------------- BLOCK 2 --------------------------- */
     {
         id: 2,
-        title: "Das chaotische Dokument",
-        icon: "\uD83D\uDCC4",
-        story: "Ein Drucker spuckt plötzlich 27 Seiten Datenmüll aus. Abi behauptet, das sei \u00ABvöllig normal\u00BB. Zwischen Meetings, Zahlen und Kaffeespuren steckt der nächste Code.",
-        task: "Analysiert das Dokument mit Hilfe von AI. Findet das versteckte Muster und das Lösungswort.",
-        content: "<p><strong>INTERNES MEMO &ndash; Facility Management</strong></p><p>Datum: Montag, 08:13 Uhr<br>Betreff: Anomalien im Gebäudesystem</p><p>Sensor 3A meldet erhöhten Wasserverbrauch in der Küche (Etage 2). Ursache unklar. Die Filteranlage wurde um 07:58 aktiviert, Temperatur auf 94&deg;C eingestellt. Verbrauchsmuster: 6x zwischen 08:00 und 08:30, dann Pause, dann erneut 4x zwischen 09:00 und 09:15.</p><p>Parallel dazu: Meetingraum A doppelt gebucht (Konflikt HR/Marketing). Meetingraum B leer, aber Heizung auf 27&deg;C. IT meldet Druckerstau in Etage 3 (Papiersensor defekt, Ticket #4471).</p><p>Auffällig: Die Mitarbeiterbefragung Q2 zeigt, dass 89% der Befragten eine bestimmte Ressource als \u00ABunverzichtbar für Produktivität\u00BB bewerten. Diese Ressource ist weder digitaler noch elektrischer Natur. Sie wurde im Budget unter \u00ABBetriebsmittel, Kategorie Getränke, Unterkategorie Heissgetränke, Sorte: Arabica/Robusta\u00BB erfasst.</p><p>Wartungsprotokoll Gerät KM-7 (Küche E2): Letzte Entkalkung vor 14 Tagen. Bohnenbehälter zu 23% gefüllt. Täglicher Output: durchschnittlich 47 Einheiten. Fehlermeldung letzte Woche: \u00ABBrühgruppe blockiert\u00BB.</p><p>Randnotiz des Facility Managers: <em>\u00ABWenn dieses Gerät ausfällt, kann ich gleich den ganzen Standort schliessen.\u00BB</em></p><p>Zusatzinfo: Budgetposition 2024-GM-0891 wurde um 12% erhöht. Lieferant: Tschibo Business Solutions. Vertragslaufzeit: 36 Monate.</p><p><strong>Aufgabe an alle: Bitte Anomalien bis Freitag melden. Priorisierung nach Relevanz für den Betriebsablauf.</strong></p>",
-        solution: "Wachmacher",
-        altSolutions: [],
-        hints: [
-            "Abi sagt: Die Zahlen sind Ablenkung. Worum dreht sich das GANZE Dokument eigentlich?",
-            "Abi sagt: Ich bin nicht Kaffee, aber ein Kaffee könnte ich sein."
+        title: 'Rechnungsdaten ins Excel bringen',
+        icon: '🧾',
+        duration: '10–15 Minuten',
+        story: 'Abi findet mehrere fiktive Rechnungsnotizen. Die Daten sind nicht sauber strukturiert. Erstellt daraus eine Excel-Tabelle und berechnet die Summe.',
+        task: [
+            'Erkennt Rechnungsnummern, Lieferanten, Daten und Beträge.',
+            'Baut eine strukturierte Tabelle (Lieferant, Rechnungsnummer, Datum, Betrag, Status).',
+            'Findet die doppelt erfasste Rechnung.',
+            'Berechnet die Summe der gültigen Rechnungsbeträge (ohne Duplikat).'
         ],
-        pointsPerStation: 25,
-        hintCost: 5
+        riddle: {
+            type: 'text',
+            label: 'Rechnungsnotizen',
+            content:
+`Rechnung A: Lieferant OfficePro AG, Rechnungsnummer OP-2041, Datum 03.04.2026, Betrag CHF 430.00, Status offen.
+Rechnung B: Lieferant DataClean GmbH, Rechnungsnummer DC-1188, Datum 07.04.2026, Betrag CHF 820.00, Status geprüft.
+Rechnung C: Lieferant PrintPlus AG, Rechnungsnummer PP-5510, Datum 08.04.2026, Betrag CHF 275.00, Status offen.
+Rechnung D: Lieferant OfficePro AG, Rechnungsnummer OP-2041, Datum 03.04.2026, Betrag CHF 430.00, Status doppelt erfasst.
+Rechnung E: Lieferant AI Services AG, Rechnungsnummer AI-9001, Datum 10.04.2026, Betrag CHF 475.00, Status geprüft.`
+        },
+        answerType: 'text',
+        acceptedAnswers: ['2000', '2000.00', 'chf 2000', '2000 chf'],
+        blockHint: '2000',
+        answerLabel: 'Summe der gültigen Rechnungen (CHF)',
+        answerPlaceholder: 'z. B. 1234',
+        hints: [
+            'Abi sagt: Eine Rechnung taucht doppelt auf. Doppelt hält hier nicht besser.',
+            'Abi sagt: Entferne die doppelte OP-2041.',
+            'Abi sagt: Addiere nur die gültigen Rechnungsbeträge.'
+        ],
+        successMsg: 'Abi sagt: Stark. Ihr habt die Rechnungen sortiert, ohne dass Excel geweint hat.'
     },
+
+    /* --------------------------- BLOCK 3 --------------------------- */
     {
         id: 3,
-        title: "Die Prompt-Challenge",
-        icon: "\uD83D\uDD11",
-        story: "Vor euch steht eine digitale Tür. Sie öffnet sich nicht mit Kraft, sondern mit Logik. Abi setzt eine winzige Brille auf und murmelt etwas von \u00ABSemantik\u00BB.",
-        task: "Löst das Rätsel. Gebt das Lösungswort ein (ohne Umlaute, Grossbuchstaben).",
-        content: "<p>Die Tür vor euch hat kein erkennbares Bedienelement. Stattdessen zeigt ein Display folgendes Gedicht:</p><p style=\"text-align:center; font-size:1.1rem; padding:1.2rem; background:#f3e5f5; border-radius:10px; border:2px solid #9c27b0; margin:1rem 0; line-height:1.9;\"><em>Ich bin nicht Ursache und nicht das Ziel,<br>nur Vermittler zwischen Wollen und Erlaubnis.<br>Meine Gestalt ist Argument, nicht Aussage \u2013<br>bedeutungslos allein, doch wahr im Gegenstück.<br>Wo Geometrie auf Erwartung trifft, entsteht Berechtigung,<br>und eine kleine Rotation kippt Zustand in Zustand.<br>Ich trage keine Botschaft, nur die Bedingung ihrer Annahme;<br>Struktur, die erst im fremden Hohlraum Sinn gewinnt.<br>Mein wahrer Name beugt sich um ein einzig Zeichen,<br>das eure Maschinen nicht ertragen und in zwei zerlegen.<br>Was bin ich?</em></p><p>Daneben blinkt eine Systemmeldung:</p><p style=\"padding:0.8rem; background:#fff3e0; border-radius:8px; border-left:4px solid #ff9800;\">Eingabe nur ohne Sonderzeichen. Umlaute müssen aufgelöst werden (ue statt \u00fc, ae statt \u00e4). Grossbuchstaben.</p><p>Abi ergänzt: <em>\u00ABDieses Gedicht knackt ihr nur gemeinsam: Eine KI ordnet die Begriffe, doch den letzten Sprung macht nur ein menschlicher Kopf.\u00BB</em></p>",
-        solution: "SCHLÜSSEL",
-        altSolutions: ["SCHLUESSEL"],
-        hints: [
-            "Abi sagt: Denkt an ein Gegenstück, das allein bedeutungslos ist \u2013 erst im passenden Hohlraum erzeugt seine Form Berechtigung und eine Zustandsänderung.",
-            "Abi sagt: 9 Buchstaben mit Umlaut, hier 10 ohne. Das \u00abgebeugte Zeichen\u00bb ist ein \u00fc, das die Maschine in zwei zerlegt: \u00fc wird ue."
+        title: 'Excel-Challenge mit Copilot',
+        icon: '📊',
+        duration: '15 Minuten',
+        story: 'Abi öffnet eine chaotische Excel-Tabelle mit Abteilungen, Kosten, Status und Kommentaren. Welche Abteilung hat den auffälligsten Kostenanstieg?',
+        task: [
+            'Bereinigt die Daten und beachtet doppelte Zeilen.',
+            'Vergleicht die Kosten von März und April.',
+            'Erkennt die grösste auffällige Differenz.',
+            'Nennt die richtige Abteilung.'
         ],
-        pointsPerStation: 25,
-        hintCost: 5
+        riddle: {
+            type: 'table',
+            label: 'Excel-Auszug',
+            headers: ['Abteilung', 'Kosten März', 'Kosten April', 'Status', 'Kommentar'],
+            rows: [
+                ['HR', '1200', '1300', 'normal', 'leichte Erhöhung wegen Schulung'],
+                ['IT', '2500', '4700', 'auffällig', 'mehrere neue Tools und Lizenzen'],
+                ['Marketing', '1800', '1900', 'normal', 'Kampagnenkosten stabil'],
+                ['Finanzen', '1600', '1650', 'normal', 'kaum Veränderung'],
+                ['Kundenservice', '2200', '2600', 'prüfen', 'höhere Supportlast'],
+                ['IT', '2500', '4700', 'doppelt', 'doppelte Zeile zur Kontrolle']
+            ]
+        },
+        answerType: 'text',
+        acceptedAnswers: ['IT', 'it-abteilung', 'die it'],
+        blockHint: 'IT',
+        answerLabel: 'Auffälligste Abteilung',
+        answerPlaceholder: 'z. B. Abteilung',
+        hints: [
+            'Abi sagt: Schau auf den Unterschied zwischen März und April.',
+            'Abi sagt: Eine Zeile ist doppelt. Nicht zweimal zählen.',
+            'Abi sagt: Die grösste auffällige Differenz liegt bei einer technischen Abteilung.'
+        ],
+        successMsg: 'Abi sagt: Korrekt. Die IT hat gewonnen. Ob sie das wollte, ist eine andere Frage.'
     },
+
+    /* --------------------------- BLOCK 4 --------------------------- */
     {
         id: 4,
-        title: "Die Daten-Challenge",
-        icon: "\uD83D\uDCCA",
-        story: "Abi öffnet ein Dashboard, das aussieht, als hätte jemand Excel, Kaffeesatz und Zukunftsvisionen gleichzeitig benutzt. In diesem Datenchaos versteckt sich der finale Code.",
-        task: "Analysiert die Datentabelle. Der vierstellige Code ergibt sich aus einer logischen Operation auf den Daten. Nutzt AI!",
-        content: "<table><tr><th>ID</th><th>Projekt</th><th>Status</th><th>Wert</th><th>Prio</th><th>Jahr</th></tr><tr><td>A1</td><td>Chatbot Relaunch</td><td>Aktiv</td><td>12</td><td>Mittel</td><td>2028</td></tr><tr><td>B7</td><td>Legacy Migration</td><td>Pausiert</td><td>45</td><td>Niedrig</td><td>2031</td></tr><tr><td>C3</td><td>AI Vision</td><td>Aktiv</td><td>20</td><td>Hoch</td><td>2035</td></tr><tr><td>D9</td><td>Dashboard v3</td><td>Abgeschlossen</td><td>8</td><td>Mittel</td><td>2026</td></tr><tr><td>E2</td><td>Kundenportal</td><td>Aktiv</td><td>33</td><td>Niedrig</td><td>2029</td></tr><tr><td>F5</td><td>AI Assistent</td><td>Aktiv</td><td>15</td><td>Hoch</td><td>2035</td></tr><tr><td>G8</td><td>Datenbank Refresh</td><td>Pausiert</td><td>27</td><td>Mittel</td><td>2030</td></tr><tr><td>H4</td><td>Smart Automation</td><td>Aktiv</td><td>0</td><td>Hoch</td><td>2035</td></tr><tr><td>I6</td><td>Reporting Tool</td><td>Abgeschlossen</td><td>19</td><td>Niedrig</td><td>2027</td></tr></table><p style=\"margin-top:1rem; padding:1rem; background:#e8eaf6; border-radius:10px; border:2px solid #3f51b5;\"><strong>Entschlüsselungsprotokoll:</strong> Filtere alle Projekte mit Status \u00ABAktiv\u00BB UND Priorität \u00ABHoch\u00BB. Die Jahreszahl, die bei allen gefilterten Einträgen identisch ist, ergibt den finalen Code.</p>",
-        solution: "80",
-        altSolutions: [],
-        hints: [
-            "Abi sagt: wow, das sieht wirklich chaotisch aus. Aber keine Sorge, es ist einfacher als es scheint.",
-            "Abi sagt: Wie viel ergibt das Ganze?."
+        title: 'Arbeitsalltag optimieren',
+        icon: '⚙️',
+        duration: '10–15 Minuten',
+        story: 'Abi präsentiert ein typisches Arbeitsproblem: Ein Team verliert jede Woche Zeit durch manuelle Nachbearbeitung, unklare E-Mails und wiederkehrende Excel-Auswertungen.',
+        task: [
+            'Analysiert das Problem mit AI.',
+            'Formuliert einen kurzen Verbesserungsvorschlag als Workflow.',
+            'Der Vorschlag muss mindestens 4 dieser Ideen sinnvoll enthalten: E-Mail-Inhalte zusammenfassen, Rechnungsdaten strukturiert in Excel übertragen, Duplikate/Auffälligkeiten prüfen, Zusammenfassung oder Antwortmail generieren.',
+            'Tipp: Ihr könnt auch direkt das Lösungswort eingeben, wenn ihr es kennt.'
         ],
-        pointsPerStation: 25,
-        hintCost: 5
-    },
-    {
-        id: 5,
-        title: "Bonus-Challenge",
-        icon: "\uD83C\uDF81",
-        story: "Geschafft! Doch Abi kramt grinsend ein zerknittertes Blatt hervor: \u00ABEinen hab ich noch. Sieht aus wie sinnloser Bürokram. Ist es auch. Fast.\u00BB",
-        task: "Findet das versteckte Lösungswort. Achtung: Der Inhalt ist reine Tarnung \u2013 die Lösung steckt nicht in dem, was dasteht, sondern in der Art, wie es dasteht.",
-        content: "<div style=\"text-align:center; margin-bottom:1rem;\"><div style=\"font-size:3.4rem; line-height:1;\">\uD83C\uDF81\uD83C\uDF7A\uD83D\uDCCB</div><h2 style=\"color:#7C4DFF; margin:0.4rem 0 0;\">Bonus-Challenge</h2></div><p>Abi überreicht euch feierlich die <strong>\u00ABInterne Hausordnung \u2013 Nachtrag 47b\u00BB</strong>. Sie wirkt vollkommen überflüssig. Genau das ist der Trick.</p><div style=\"padding:1.2rem; background:#fffde7; border:2px dashed #FBC02D; border-radius:12px; line-height:1.85;\"><p style=\"margin:0 0 .7rem; font-weight:700;\">\uD83D\uDCCB Hausordnung &ndash; Nachtrag 47b <span style=\"font-weight:400; font-size:.85rem;\">(rechtlich völlig unverbindlich)</span></p><p style=\"margin:.25rem 0;\"><strong>§9</strong> Stromausfall ist kein Grund zur Panik, sondern eine spontane Achtsamkeitsübung im Dunkeln.</p><p style=\"margin:.25rem 0;\"><strong>§3</strong> Büroklammern gelten ab 14:30 Uhr als offizielle Ersatzwährung der Teeküche.</p><p style=\"margin:.25rem 0;\"><strong>§5</strong> Konferenzen ohne Kekse sind laut Betriebsrat zu 73% juristisch anfechtbar.</p><p style=\"margin:.25rem 0;\"><strong>§5</strong> Kantinen-Pudding darf keinesfalls als ballistisches Wurfgeschoss zweckentfremdet werden.</p><p style=\"margin:.25rem 0;\"><strong>§4</strong> Halbtagskräfte dürfen den Aufzug ausschliesslich bis zur Hälfte benutzen.</p><p style=\"margin:.25rem 0;\"><strong>§3</strong> Klimaanlagen verhandeln ihre Temperatur grundsätzlich gegen den erklärten Willen aller 42 Mitarbeitenden.</p><p style=\"margin:.25rem 0;\"><strong>§3</strong> Spesenabrechnungen über Glühwein werden im Dezember besonders wohlwollend geprüft.</p><p style=\"margin:.25rem 0;\"><strong>§7</strong> Aktenordner, die niemand öffnet, erlangen nach exakt 3 Jahren ein eigenes Bewusstsein.</p></div><p style=\"margin-top:1rem; padding:.85rem; background:#f3e5f5; border-left:4px solid #9c27b0; border-radius:8px;\"><em>Zusatzhinweis von Abi: \u00ABDie Paragraphen sind ordentlich nummeriert. Nur leider nicht in der Reihenfolge, die ihr erwartet. Und bevor ihr fragt: Die Anfangsbuchstaben ergeben diesmal wirklich nichts. Ehrenwort eines Roboters.\u00BB</em></p>",
-        solution: "FREIBIER",
-        altSolutions: [],
+        riddle: {
+            type: 'text',
+            label: 'Problembeschreibung',
+            content:
+`Ein Team erhält jede Woche mehrere E-Mails mit Rechnungsinformationen. Die Informationen sind uneinheitlich formuliert. Danach werden Beträge manuell in Excel übertragen. Anschliessend prüft eine Person, ob Daten fehlen oder doppelt vorkommen. Am Ende wird eine Zusammenfassung per E-Mail an die verantwortliche Person geschickt. Dieser Prozess ist langsam, fehleranfällig und wiederholt sich jede Woche.`
+        },
+        answerType: 'keywords',                 // Freitext + Schlüsselbegriff-Prüfung
+        keywords: ['zusammenfassen', 'excel', 'duplikate', 'e-mail', 'rechnungsdaten', 'auffälligkeiten', 'automatisieren', 'workflow'],
+        minKeywords: 4,                          // mindestens so viele Begriffe
+        acceptedAnswers: ['FLOW'],               // direktes Lösungswort wird auch akzeptiert
+        blockHint: 'FLOW',
+        answerLabel: 'Euer Verbesserungsvorschlag (oder Lösungswort)',
+        answerPlaceholder: 'Beschreibt euren Workflow …',
         hints: [
-            "Lösung: ja, das ist wirklich schwer. Aber genau deshalb gibt es hier den Bonus.",
-            "Schritt für Schritt: (1) Ignoriert den Inhalt komplett \u2013 er ist reine Tarnung. (2) Jeder Paragraph beginnt mit \u00AB§\u00BB und einer Zahl; diese Zahl ist KEINE Nummerierung, sondern eine Buchstaben-Position. (3) Nehmt aus jedem Paragraphen das erste echte Wort und zählt darin bis zur §-Zahl: §9 Stromausfall = F, §3 Büroklammern = R, §5 Konferenzen = E, §5 Kantinen = I, §4 Halbtagskräfte = B, §3 Klimaanlagen = I, §3 Spesenabrechnungen = E, §7 Aktenordner = R. (4) Von oben nach unten gelesen ergibt das F-R-E-I-B-I-E-R = FREIBIER.",
-            "Warum es schwer ist: Man muss drei Ebenen durchschauen \u2013 (1) den albernen Inhalt als bloße Tarnung erkennen, (2) bemerken, dass die §-Zahlen unregelmäßig sind (9, 3, 5, 5, 4, 3, 3, 7) und daher eine versteckte Funktion haben, (3) den gedanklichen Sprung machen, dass die Zahl eine Buchstabenposition im jeweils ersten Wort ist. Eine KI löst das nicht über reines Inhaltsverständnis, weil die Lösung rein strukturell codiert ist und kein semantischer Zusammenhang weiterhilft.",
-            "Falsche Fährten: • Die Anfangsbuchstaben (S, B, K, K, H, K, S, A) ergeben bewusst Unsinn. • Sortiert man die Paragraphen nach §-Zahl aufsteigend, kommt R-I-E-B-E-I-R-F heraus \u2013 eine Sackgasse. • Die vielen absurden Zahlen, Uhrzeiten und Prozente (14:30, 73%, 42, 3 Jahre) verleiten zu einer Zahlen-Lösung. • Der Zusatzhinweis behauptet frech, die Nummerierung sei \u00abnicht in der erwarteten Reihenfolge\u00bb \u2013 das stimmt sogar, lenkt aber vom eigentlichen Mechanismus ab."
+            'Abi sagt: Denkt an einen Ablauf vom Eingang der E-Mail bis zur fertigen Antwort.',
+            'Abi sagt: AI kann helfen beim Zusammenfassen, Strukturieren, Prüfen und Formulieren.',
+            'Abi sagt: Gesucht ist ein Vorschlag, der den Prozess als Workflow denkt.'
         ],
-        pointsPerStation: 25,
-        hintCost: 5
+        successMsg: 'Abi sagt: Sehr gut. Ihr habt aus Chaos einen Workflow gemacht. Das klingt fast nach Magie, ist aber Copilot.'
     }
 ];
 
-/** Maximal erreichbare Punktzahl (Summe aller Stationen) */
-var MAX_POINTS = STATIONS.reduce(function(sum, s) { return sum + s.pointsPerStation; }, 0);
+// Finaler Code
+const FINAL_CODE = {
+    // Alle akzeptierten Schreibweisen (Normalisierung entfernt Leer-/Sonderzeichen)
+    acceptedVariants: ['REX-2000-IT-FLOW', 'REX 2000 IT FLOW', 'REX2000ITFLOW'],
+    successMsg: 'Abi sagt: Gratulation! Ihr habt den AI Business Escape Room gemeistert. Die Daten sind strukturiert, die E-Mails formuliert und Excel ist nur leicht traumatisiert.',
+    errorMsgs: [
+        'Abi sagt: Fast. Aber diese Tür öffnet höchstens den Pausenraum.',
+        'Abi sagt: Die Kaffeemaschine hat den Code abgelehnt.',
+        'Abi sagt: Kreativ, aber leider nicht korrekt.',
+        'Abi sagt: Ich sehe, was ihr versucht habt. Leider sieht die Tür das anders.',
+        'Abi sagt: Dieser Code hat starke PowerPoint-Energie, aber keine Escape-Room-Wirkung.'
+    ]
+};
 
-// ============================================================
-// LEADERBOARD - localStorage Verwaltung
-// ============================================================
+// Kurze Abi-Kommentare für verschiedene Situationen
+const ABI_MESSAGES = {
+    start: 'Hallo, ich bin Abi. Wählt einen Block – ihr könnt frei entscheiden, wo ihr startet!',
+    openBlock: 'Lest genau. Der Teufel steckt oft im Detail (und manchmal in Excel).',
+    wrong: 'Abi sagt: Noch nicht ganz. Probiert es nochmal oder nutzt einen Hinweis.',
+    allSolved: 'Abi sagt: Alle Blöcke gelöst! Die letzte Tür ist jetzt offen.',
+    hint: 'Abi sagt: Ein Hinweis kostet keine Punkte, wird aber gezählt.'
+};
 
-/* Konstanten */
-var LEADERBOARD_KEY = "aiEscapeRoomLeaderboard";
-var TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+/* =========================================================================
+   2) SPIELZUSTAND (State)
+   ========================================================================= */
 
-/** Eindeutige ID erzeugen (crypto.randomUUID falls verfügbar) */
-function generateRunId() {
-    if (window.crypto && typeof window.crypto.randomUUID === "function") {
-        return window.crypto.randomUUID();
-    }
-    return "run-" + Date.now() + "-" + Math.floor(Math.random() * 1000000);
+let state = null;        // aktueller Team-Spielstand
+let timerInterval = null;
+
+// Frisches State-Objekt erzeugen
+function createFreshState(teamName) {
+    return {
+        id: 'team_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), // eindeutige ID
+        teamName: teamName,
+        startTime: Date.now(),
+        endTime: null,
+        lastActiveTime: Date.now(),
+        hintsUsed: 0,
+        hintsShownPerBlock: {},   // { blockId: anzahl }
+        solvedBlocks: [],         // [1,2,...]
+        finalSolved: false,
+        bonus: 0,
+        status: 'In Bearbeitung',
+        points: 0
+    };
 }
 
-/** Leaderboard sicher aus localStorage laden (leeres Array bei Fehler) */
-function loadLeaderboard() {
+/* =========================================================================
+   3) KLEINE HELFER
+   ========================================================================= */
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+// Bildschirm wechseln
+function showScreen(id) {
+    $$('.screen').forEach(s => s.classList.remove('active'));
+    $('#' + id).classList.add('active');
+    // Abi nur im Spiel anzeigen
+    $('#abi-container').classList.toggle('hidden', id !== 'screen-game');
+    window.scrollTo(0, 0);
+}
+
+// Abi sprechen lassen
+function abiSay(text) {
+    $('#abi-text').textContent = text;
+}
+
+// Kurzer Toast
+function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.add('hidden'), 2600);
+}
+
+// Zeit in mm:ss oder hh:mm:ss formatieren
+function formatTime(ms) {
+    if (ms == null || ms < 0) ms = 0;
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+// Antwort normalisieren (Gross/Klein, Leer- und Sonderzeichen egal)
+function normalize(str) {
+    return String(str).toLowerCase().replace(/[\s\-_.]/g, '').trim();
+}
+
+// Gesamtpunkte aus dem State berechnen
+function computePoints(s) {
+    return s.solvedBlocks.length * CONFIG.pointsPerBlock
+        + (s.finalSolved ? CONFIG.pointsFinalCode : 0)
+        + (s.bonus || 0);
+}
+
+/* =========================================================================
+   4) SPIELSTART
+   ========================================================================= */
+
+function startGame() {
+    const name = $('#team-name-input').value.trim();
+    if (!name) {
+        toast('Bitte gebt einen Teamnamen ein.');
+        $('#team-name-input').focus();
+        return;
+    }
+    state = createFreshState(name);
+    saveTeamRun();           // Lauf sofort speichern (erscheint in Rangliste)
+    startTimer();
+    loadBlocks();
+    updateHud();
+    showScreen('screen-game');
+    abiSay(ABI_MESSAGES.start);
+}
+
+// Timer starten (zählt hoch)
+function startTimer() {
+    stopTimer();
+    timerInterval = setInterval(() => {
+        if (!state) return;
+        const elapsed = (state.endTime || Date.now()) - state.startTime;
+        $('#hud-timer').textContent = formatTime(elapsed);
+    }, 1000);
+}
+function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+/* =========================================================================
+   5) BLÖCKE ALS KARTEN RENDERN
+   ========================================================================= */
+
+function loadBlocks() {
+    const grid = $('#blocks-grid');
+    grid.innerHTML = '';
+
+    BLOCKS.forEach(block => {
+        const solved = state.solvedBlocks.includes(block.id);
+        const card = document.createElement('div');
+        card.className = 'block-card' + (solved ? ' solved' : '');
+
+        card.innerHTML = `
+            ${solved ? '<div class="solved-check">✓</div>' : ''}
+            <div class="block-card-top">
+                <span class="block-icon">${block.icon}</span>
+                <div>
+                    <h3>Block ${block.id}: ${block.title}</h3>
+                    <div class="block-duration">⏱️ ${block.duration}</div>
+                </div>
+            </div>
+            <div class="block-badges">
+                <span class="badge badge-points">${CONFIG.pointsPerBlock} Punkte</span>
+                <span class="badge ${solved ? 'badge-solved' : 'badge-open'}">
+                    ${solved ? '✓ Gelöst' : 'Offen'}
+                </span>
+            </div>
+            <button class="btn ${solved ? 'btn-ghost' : 'btn-primary'}" data-open="${block.id}">
+                ${solved ? 'Nochmal ansehen' : 'Block starten'}
+            </button>
+        `;
+        grid.appendChild(card);
+    });
+
+    // Klick-Handler für "Block starten"
+    $$('#blocks-grid [data-open]').forEach(btn => {
+        btn.addEventListener('click', () => openBlock(parseInt(btn.dataset.open, 10)));
+    });
+
+    updateFinalCard();
+    updateProgress();
+}
+
+// Finale Karte je nach Fortschritt aktualisieren
+function updateFinalCard() {
+    const allSolved = state.solvedBlocks.length === BLOCKS.length;
+    const card = $('#final-card');
+    const btn = $('#btn-open-final');
+    const status = $('#final-card-status');
+    const lock = card.querySelector('.final-lock');
+
+    if (state.finalSolved) {
+        card.classList.remove('locked'); card.classList.add('unlocked');
+        lock.textContent = '✅';
+        status.textContent = 'Finaler Code gelöst! Ihr habt den Escape Room gemeistert.';
+        btn.disabled = false;
+        btn.textContent = 'Endergebnis anzeigen';
+    } else if (allSolved) {
+        card.classList.remove('locked'); card.classList.add('unlocked');
+        lock.textContent = '🔓';
+        status.textContent = 'Alle Blöcke gelöst! Gebt jetzt den finalen Code ein.';
+        btn.disabled = false;
+        btn.textContent = 'Finalen Code eingeben';
+    } else {
+        card.classList.add('locked'); card.classList.remove('unlocked');
+        lock.textContent = '🔒';
+        status.textContent = `Noch ${BLOCKS.length - state.solvedBlocks.length} Block(e) lösen, um den finalen Code freizuschalten.`;
+        btn.disabled = true;
+        btn.textContent = 'Finalen Code eingeben';
+    }
+}
+
+// Fortschrittsbalken aktualisieren
+function updateProgress() {
+    const pct = Math.round((state.solvedBlocks.length / BLOCKS.length) * 100);
+    $('#progress-fill').style.width = pct + '%';
+    $('#progress-label').textContent = pct + ' % gelöst';
+}
+
+/* =========================================================================
+   6) BLOCK ÖFFNEN (Detail-Overlay)
+   ========================================================================= */
+
+let currentBlockId = null;
+
+function openBlock(blockId) {
+    const block = BLOCKS.find(b => b.id === blockId);
+    if (!block) return;
+    currentBlockId = blockId;
+    markActive();
+
+    $('#block-detail-icon').textContent = block.icon;
+    $('#block-detail-title').textContent = `Block ${block.id}: ${block.title}`;
+    $('#block-detail-meta').textContent = `⏱️ ${block.duration} · ${CONFIG.pointsPerBlock} Punkte`;
+    $('#block-detail-story').textContent = block.story;
+
+    // Aufgabe als Liste
+    $('#block-detail-task').innerHTML = '<ul>' + block.task.map(t => `<li>${t}</li>`).join('') + '</ul>';
+
+    // Rätseltext (Text oder Tabelle)
+    $('#block-detail-riddle').innerHTML = renderRiddle(block.riddle);
+
+    // Hinweise zurücksetzen und bereits gezeigte wieder anzeigen
+    renderShownHints(block);
+
+    // Antwortfeld je nach Typ
+    const solved = state.solvedBlocks.includes(block.id);
+    setupAnswerArea(block, solved);
+
+    $('#answer-feedback').textContent = '';
+    $('#answer-feedback').className = 'answer-feedback';
+
+    $('#block-overlay').classList.remove('hidden');
+    abiSay(ABI_MESSAGES.openBlock);
+}
+
+// Rätsel als HTML rendern
+function renderRiddle(riddle) {
+    if (riddle.type === 'table') {
+        const head = '<tr>' + riddle.headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+        const body = riddle.rows.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('');
+        return `<span class="riddle-label">${riddle.label}</span>
+                <table class="riddle-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+    }
+    return `<span class="riddle-label">${riddle.label}</span>${escapeHtml(riddle.content)}`;
+}
+
+// Einfache HTML-Escape-Funktion (Sicherheit bei Textausgabe)
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Antwortbereich aufbauen (Text vs. Keyword/Freitext)
+function setupAnswerArea(block, solved) {
+    const input = $('#answer-input');
+    const btnText = $('#btn-check-answer');
+    const textarea = $('#answer-textarea');
+    const btnArea = $('#btn-check-textarea');
+
+    $('#answer-label').textContent = block.answerLabel || 'Eure Lösung';
+    input.value = '';
+    textarea.value = '';
+
+    if (block.answerType === 'keywords') {
+        // Grosses Textfeld für Freitext-Vorschlag
+        input.parentElement.classList.add('hidden');   // versteckt die Zeile mit input+button
+        textarea.classList.remove('hidden');
+        btnArea.classList.remove('hidden');
+        textarea.placeholder = block.answerPlaceholder || 'Euren Vorschlag hier eingeben …';
+    } else {
+        input.parentElement.classList.remove('hidden');
+        textarea.classList.add('hidden');
+        btnArea.classList.add('hidden');
+        input.placeholder = block.answerPlaceholder || 'Antwort eingeben …';
+    }
+
+    if (solved) {
+        input.disabled = true; textarea.disabled = true;
+        btnText.disabled = true; btnArea.disabled = true;
+    } else {
+        input.disabled = false; textarea.disabled = false;
+        btnText.disabled = false; btnArea.disabled = false;
+    }
+}
+
+/* =========================================================================
+   7) HINWEISE
+   ========================================================================= */
+
+function showHint(blockId) {
+    const block = BLOCKS.find(b => b.id === blockId);
+    if (!block) return;
+
+    const shown = state.hintsShownPerBlock[blockId] || 0;
+    if (shown >= block.hints.length) {
+        toast('Alle Hinweise für diesen Block sind bereits sichtbar.');
+        return;
+    }
+
+    // nächsten Hinweis freischalten und zählen
+    state.hintsShownPerBlock[blockId] = shown + 1;
+    state.hintsUsed += 1;
+    updateTeamRun();
+    updateHud();
+
+    renderShownHints(block);
+    abiSay(block.hints[shown]);
+}
+
+// Bereits gezeigte Hinweise darstellen
+function renderShownHints(block) {
+    const shown = state.hintsShownPerBlock[block.id] || 0;
+    const list = $('#hint-list');
+    list.innerHTML = '';
+    for (let i = 0; i < shown; i++) {
+        const li = document.createElement('li');
+        li.textContent = block.hints[i];
+        list.appendChild(li);
+    }
+    $('#hint-counter').textContent = `${shown} / ${block.hints.length} Hinweisen genutzt`;
+    const btn = $('#btn-show-hint');
+    btn.disabled = shown >= block.hints.length;
+}
+
+/* =========================================================================
+   8) ANTWORT PRÜFEN
+   ========================================================================= */
+
+function checkAnswer(blockId) {
+    const block = BLOCKS.find(b => b.id === blockId);
+    if (!block) return;
+    if (state.solvedBlocks.includes(blockId)) return;
+
+    let correct = false;
+
+    if (block.answerType === 'keywords') {
+        const text = $('#answer-textarea').value;
+        correct = checkKeywords(block, text);
+    } else {
+        const answer = $('#answer-input').value;
+        correct = block.acceptedAnswers.some(a => normalize(a) === normalize(answer));
+    }
+
+    const feedback = $('#answer-feedback');
+    if (correct) {
+        feedback.textContent = block.successMsg;
+        feedback.className = 'answer-feedback ok';
+        completeBlock(blockId);
+    } else {
+        feedback.textContent = ABI_MESSAGES.wrong;
+        feedback.className = 'answer-feedback err';
+        abiSay(ABI_MESSAGES.wrong);
+    }
+}
+
+// Schlüsselbegriffe zählen (Block 4) – oder direktes Lösungswort akzeptieren
+function checkKeywords(block, text) {
+    const norm = String(text).toLowerCase();
+    // direktes Lösungswort?
+    if (block.acceptedAnswers && block.acceptedAnswers.some(a => normalize(a) === normalize(text))) {
+        return true;
+    }
+    let count = 0;
+    block.keywords.forEach(kw => {
+        if (norm.includes(kw.toLowerCase())) count++;
+    });
+    return count >= (block.minKeywords || 4);
+}
+
+/* =========================================================================
+   9) BLOCK ABSCHLIESSEN
+   ========================================================================= */
+
+function completeBlock(blockId) {
+    if (!state.solvedBlocks.includes(blockId)) {
+        state.solvedBlocks.push(blockId);
+    }
+    state.points = computePoints(state);
+    updateTeamRun();
+    updateHud();
+    loadBlocks();
+
+    // Antwortfelder sperren
+    $('#answer-input').disabled = true;
+    $('#answer-textarea').disabled = true;
+    $('#btn-check-answer').disabled = true;
+    $('#btn-check-textarea').disabled = true;
+
+    const block = BLOCKS.find(b => b.id === blockId);
+    abiSay(block.successMsg);
+    toast(`+${CONFIG.pointsPerBlock} Punkte! Hinweis: ${block.blockHint}`);
+
+    // Alle gelöst? -> finalen Code freischalten
+    if (state.solvedBlocks.length === BLOCKS.length) {
+        unlockFinalCode();
+    }
+}
+
+/* =========================================================================
+   10) FINALER CODE
+   ========================================================================= */
+
+function unlockFinalCode() {
+    updateFinalCard();
+    abiSay(ABI_MESSAGES.allSolved);
+    toast('Alle Blöcke gelöst – der finale Code ist frei!');
+}
+
+// Overlay mit gesammelten Hinweisen öffnen
+function openFinalOverlay() {
+    if (state.finalSolved) { showEndScreen(); return; }
+    if (state.solvedBlocks.length < BLOCKS.length) {
+        toast('Zuerst alle 4 Blöcke lösen.');
+        return;
+    }
+    const wrap = $('#collected-hints');
+    wrap.innerHTML = BLOCKS.map(b => `
+        <div class="hint-chip">
+            <span class="chip-block">Block ${b.id}</span>
+            <span class="chip-value">${b.blockHint}</span>
+        </div>
+    `).join('');
+
+    $('#final-code-input').value = '';
+    $('#final-feedback').textContent = '';
+    $('#final-feedback').className = 'answer-feedback';
+    $('#final-overlay').classList.remove('hidden');
+}
+
+function checkFinalCode() {
+    const input = $('#final-code-input').value;
+    const ok = FINAL_CODE.acceptedVariants.some(v => normalize(v) === normalize(input));
+    const feedback = $('#final-feedback');
+
+    if (ok) {
+        state.finalSolved = true;
+        state.endTime = Date.now();
+        state.status = 'Abgeschlossen';
+        state.points = computePoints(state);
+        stopTimer();
+        updateTeamRun();
+        updateHud();
+        updateFinalCard();
+
+        feedback.textContent = FINAL_CODE.successMsg;
+        feedback.className = 'answer-feedback ok';
+        abiSay(FINAL_CODE.successMsg);
+
+        setTimeout(() => {
+            $('#final-overlay').classList.add('hidden');
+            showEndScreen();
+        }, 1500);
+    } else {
+        const msg = FINAL_CODE.errorMsgs[Math.floor(Math.random() * FINAL_CODE.errorMsgs.length)];
+        feedback.textContent = msg;
+        feedback.className = 'answer-feedback err';
+        abiSay(msg);
+    }
+}
+
+/* =========================================================================
+   11) HUD AKTUALISIEREN
+   ========================================================================= */
+
+function updateHud() {
+    if (!state) return;
+    state.points = computePoints(state);
+    $('#hud-team').textContent = state.teamName;
+    $('#hud-points').textContent = state.points;
+    $('#hud-hints').textContent = state.hintsUsed;
+    $('#hud-solved').textContent = `${state.solvedBlocks.length} / ${BLOCKS.length}`;
+    updateProgress();
+}
+
+/* =========================================================================
+   12) LOCALSTORAGE / TEAM-LÄUFE
+   ========================================================================= */
+
+// Alle gespeicherten Läufe laden (robust bei leerem Storage)
+function getAllRuns() {
     try {
-        var raw = localStorage.getItem(LEADERBOARD_KEY);
-        if (!raw) return [];
-        var data = JSON.parse(raw);
-        return Array.isArray(data) ? data : [];
+        const raw = localStorage.getItem(CONFIG.storageKey);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
     } catch (e) {
-        // Beschädigte Daten -> leeres Array, Spiel läuft weiter
+        console.warn('Konnte Läufe nicht laden:', e);
         return [];
     }
 }
 
-/** Leaderboard in localStorage speichern (Fehler werden ignoriert) */
-function persistLeaderboard(teams) {
+// Alle Läufe speichern
+function setAllRuns(runs) {
     try {
-        localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(teams));
+        localStorage.setItem(CONFIG.storageKey, JSON.stringify(runs));
     } catch (e) {
-        // localStorage nicht verfügbar/voll -> Spiel läuft trotzdem weiter
+        console.warn('Konnte Läufe nicht speichern:', e);
     }
 }
 
-/** Neuen Team-Run anlegen und speichern */
-function saveTeamRun(run) {
-    var teams = loadLeaderboard();
-    teams.push(run);
-    persistLeaderboard(teams);
+// Aktuellen Lauf neu anlegen
+function saveTeamRun() {
+    if (!state) return;
+    const runs = getAllRuns();
+    state.lastActiveTime = Date.now();
+    state.points = computePoints(state);
+    runs.push(serializeState(state));
+    setAllRuns(runs);
 }
 
-/** Bestehenden Team-Run anhand der ID aktualisieren */
-function updateTeamRun(runId, updates) {
-    if (!runId) return;
-    var teams = loadLeaderboard();
-    for (var i = 0; i < teams.length; i++) {
-        if (teams[i].id === runId) {
-            for (var key in updates) {
-                if (updates.hasOwnProperty(key)) {
-                    teams[i][key] = updates[key];
-                }
-            }
-            break;
-        }
-    }
-    persistLeaderboard(teams);
-}
-
-/** Teams der letzten 2 Stunden (basierend auf lastActiveTime oder endTime) */
-function getRecentTeams() {
-    var now = Date.now();
-    return loadLeaderboard().filter(function(t) {
-        var ref = t.endTime || t.lastActiveTime || t.startTime || 0;
-        return (now - ref) <= TWO_HOURS_MS;
-    });
-}
-
-/** Alte Team-Runs (älter als 2 Stunden) löschen. Gibt Anzahl entfernter Einträge zurück. */
-function cleanOldTeamRuns() {
-    var now = Date.now();
-    var teams = loadLeaderboard();
-    var kept = teams.filter(function(t) {
-        var ref = t.endTime || t.lastActiveTime || t.startTime || 0;
-        return (now - ref) <= TWO_HOURS_MS;
-    });
-    var removed = teams.length - kept.length;
-    if (removed > 0) persistLeaderboard(kept);
-    return removed;
-}
-
-/** Teams sortieren: Punkte desc, Zeit asc, Hinweise asc */
-function sortLeaderboard(teams) {
-    return teams.slice().sort(function(a, b) {
-        if (b.points !== a.points) return b.points - a.points;
-        if (a.elapsedSeconds !== b.elapsedSeconds) return a.elapsedSeconds - b.elapsedSeconds;
-        return a.hintsUsed - b.hintsUsed;
-    });
-}
-
-/** Abschlusszeit als HH:MM formatieren */
-function formatClockTime(timestamp) {
-    if (!timestamp) return "\u2013";
-    var d = new Date(timestamp);
-    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-}
-
-/** Komplettes Leaderboard zurücksetzen */
-function resetLeaderboard() {
-    try {
-        localStorage.removeItem(LEADERBOARD_KEY);
-    } catch (e) {
-        // ignorieren
-    }
-}
-
-// ============================================================
-// GAME STATE
-// ============================================================
-
-let gameState = {
-    teamName: "",
-    runId: null,
-    currentStation: 0,
-    points: 0,
-    hintsUsed: 0,
-    hintsPerStation: STATIONS.map(function() { return 0; }),
-    solvedStations: STATIONS.map(function() { return false; }),
-    startTime: null,
-    timerInterval: null,
-    elapsedSeconds: 0
-};
-
-// ============================================================
-// GAME FUNCTIONS
-// ============================================================
-
-/** Spiel starten */
-function startGame() {
-    const nameInput = document.getElementById("team-name-input");
-    const teamName = nameInput.value.trim();
-    
-    if (!teamName) {
-        nameInput.style.borderColor = "#FF5252";
-        nameInput.placeholder = "Bitte einen Teamnamen eingeben!";
-        return;
-    }
-    
-    gameState.teamName = teamName;
-    gameState.runId = generateRunId();
-    gameState.currentStation = 0;
-    gameState.points = 0;
-    gameState.hintsUsed = 0;
-    gameState.hintsPerStation = STATIONS.map(function() { return 0; });
-    gameState.solvedStations = STATIONS.map(function() { return false; });
-    gameState.startTime = Date.now();
-    gameState.elapsedSeconds = 0;
-
-    // Neuen Team-Run im Leaderboard anlegen
-    saveTeamRun({
-        id: gameState.runId,
-        teamName: teamName,
-        points: 0,
-        hintsUsed: 0,
-        elapsedSeconds: 0,
-        solvedCount: 0,
-        totalStations: STATIONS.length,
-        startTime: gameState.startTime,
-        lastActiveTime: gameState.startTime,
-        endTime: null,
-        status: "in-progress"
-    });
-
-    document.getElementById("team-name-display").textContent = teamName;
-    document.getElementById("points-display").textContent = "0";
-    document.getElementById("hints-display").textContent = "0";
-    document.getElementById("timer-display").textContent = "00:00";
-    
-    gameState.timerInterval = setInterval(updateTimer, 1000);
-    
-    renderStation(0);
-    updateProgress();
-    showScreen("game-screen");
-    showAbi(ABI_COMMENTS.greeting);
-}
-
-/** Timer aktualisieren */
-function updateTimer() {
-    gameState.elapsedSeconds++;
-    document.getElementById("timer-display").textContent = formatTime(gameState.elapsedSeconds);
-}
-
-/** Sekunden zu mm:ss */
-function formatTime(totalSeconds) {
-    var m = Math.floor(totalSeconds / 60);
-    var s = totalSeconds % 60;
-    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
-}
-
-/** Screen wechseln */
-function showScreen(screenId) {
-    document.querySelectorAll(".screen").forEach(function(s) { s.classList.remove("active"); });
-    document.getElementById(screenId).classList.add("active");
-    
-    // Abi sichtbar im Game
-    var abiContainer = document.getElementById("abi-container");
-    if (screenId === "game-screen") {
-        abiContainer.classList.remove("hidden");
+// Aktuellen Lauf aktualisieren
+function updateTeamRun() {
+    if (!state) return;
+    const runs = getAllRuns();
+    state.lastActiveTime = Date.now();
+    state.points = computePoints(state);
+    const idx = runs.findIndex(r => r.id === state.id);
+    if (idx >= 0) {
+        runs[idx] = serializeState(state);
     } else {
-        abiContainer.classList.add("hidden");
+        runs.push(serializeState(state));
     }
+    setAllRuns(runs);
 }
 
-/** Abi Sprechblase anzeigen (verschwindet nach 5 Sekunden) */
-var abiTimeout = null;
-
-function showAbi(text) {
-    var abiText = document.getElementById("abi-text");
-    var bubble = document.getElementById("abi-speech");
-    abiText.textContent = text;
-    bubble.style.display = "block";
-    bubble.style.animation = "none";
-    setTimeout(function() { bubble.style.animation = "bubble-pop 0.4s ease"; }, 10);
-    
-    if (abiTimeout) clearTimeout(abiTimeout);
-    abiTimeout = setTimeout(function() {
-        bubble.style.display = "none";
-    }, 5000);
-}
-
-/** Abi Hover: Sprechblase nur solange Maus drauf ist */
-document.addEventListener("DOMContentLoaded", function() {
-    var abiChar = document.querySelector(".abi-character");
-    if (abiChar) {
-        abiChar.style.cursor = "pointer";
-        abiChar.addEventListener("mouseenter", function() {
-            var bubble = document.getElementById("abi-speech");
-            if (abiTimeout) clearTimeout(abiTimeout);
-            bubble.style.display = "block";
-            bubble.style.animation = "none";
-            setTimeout(function() { bubble.style.animation = "bubble-pop 0.4s ease"; }, 10);
-        });
-        abiChar.addEventListener("mouseleave", function() {
-            var bubble = document.getElementById("abi-speech");
-            bubble.style.display = "none";
-        });
-    }
-});
-
-/** Zufälliges Element aus Array */
-function randomFrom(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-
-/** Abi Gesichtsausdruck bei falscher Antwort */
-var ABI_EXPRESSIONS = ["abi-sad", "abi-laugh", "abi-confused", "abi-eyeroll", "abi-shake", "abi-skeptical"];
-var abiExprTimeout = null;
-
-function showAbiExpression(forceExpr) {
-    var head = document.querySelector("#abi-container .abi-head");
-    if (!head) return;
-    // Vorherige Expression entfernen
-    ABI_EXPRESSIONS.forEach(function(cls) { head.classList.remove(cls); });
-    if (abiExprTimeout) clearTimeout(abiExprTimeout);
-    // Expression setzen (erzwungen oder zufällig)
-    var expr = forceExpr || randomFrom(ABI_EXPRESSIONS);
-    head.classList.add(expr);
-    abiExprTimeout = setTimeout(function() {
-        head.classList.remove(expr);
-    }, 2500);
-}
-
-/** Station rendern */
-function renderStation(index) {
-    var station = STATIONS[index];
-    var container = document.getElementById("station-container");
-    var isSolved = gameState.solvedStations[index];
-    
-    var html = '<div class="station-card ' + (isSolved ? 'solved' : '') + '">';
-    html += '<div class="station-header">';
-    html += '<span class="station-icon">' + station.icon + '</span>';
-    html += '<h2 class="station-title">Station ' + station.id + ': ' + station.title + '</h2>';
-    html += '</div>';
-    html += '<div class="station-story">' + station.story + '</div>';
-    html += '<p class="station-task">\uD83C\uDFAF ' + station.task + '</p>';
-    html += '<div class="station-content">' + station.content + '</div>';
-    html += '<div class="feedback" id="feedback-' + index + '"></div>';
-    
-    if (!isSolved) {
-        html += '<div class="answer-area">';
-        html += '<input type="text" class="answer-input" id="answer-input-' + index + '" placeholder="Lösungswort eingeben..." onkeydown="handleKey(event,' + index + ')">';
-        html += '<button class="btn btn-submit" onclick="submitAnswer(' + index + ')">Prüfen \u2714\uFE0F</button>';
-        html += '</div>';
-        html += '<div class="hint-area">';
-        html += '<button class="btn btn-hint" onclick="showHint(' + index + ')">\uD83D\uDCA1 Hinweis</button>';
-        html += '<span class="hint-cost">(-' + station.hintCost + ' Punkte)</span>';
-        html += '</div>';
-    } else {
-        html += '<div class="feedback success">\u2705 Diese Station wurde bereits gelöst!</div>';
-    }
-    
-    html += '</div>';
-    container.innerHTML = html;
-    
-    // Focus auf Input
-    if (!isSolved) {
-        setTimeout(function() {
-            var inp = document.getElementById("answer-input-" + index);
-            if (inp) inp.focus();
-        }, 100);
-    }
-}
-
-/** Enter-Taste */
-function handleKey(event, idx) {
-    if (event.key === "Enter") submitAnswer(idx);
-}
-
-/** Antwort prüfen */
-function submitAnswer(stationIndex) {
-    // Bereits gelöste Station nicht erneut werten (verhindert Doppel-Punkte)
-    if (gameState.solvedStations[stationIndex]) return;
-
-    var station = STATIONS[stationIndex];
-    var input = document.getElementById("answer-input-" + stationIndex);
-    var feedback = document.getElementById("feedback-" + stationIndex);
-    var answer = input.value.trim().toUpperCase();
-    
-    if (!answer) {
-        feedback.className = "feedback error";
-        feedback.textContent = "Bitte gebt eine Antwort ein!";
-        return;
-    }
-    
-    // Lösung prüfen (Haupt + Alternativen)
-    var isCorrect = (answer === station.solution.toUpperCase());
-    if (!isCorrect && station.altSolutions) {
-        for (var i = 0; i < station.altSolutions.length; i++) {
-            if (answer === station.altSolutions[i].toUpperCase()) {
-                isCorrect = true;
-                break;
-            }
-        }
-    }
-    
-    if (isCorrect) {
-        // RICHTIG!
-        gameState.solvedStations[stationIndex] = true;
-        gameState.points += station.pointsPerStation;
-        
-        feedback.className = "feedback success success-anim";
-        feedback.textContent = "\uD83C\uDF89 Korrekt! +" + station.pointsPerStation + " Punkte!";
-        input.disabled = true;
-        
-        updateProgress();
-        updatePointsDisplay();
-        syncCurrentRun();
-        showAbi(randomFrom(ABI_COMMENTS.correct));
-        
-        // Alle gelöst?
-        if (gameState.solvedStations.every(function(s) { return s; })) {
-            setTimeout(showEndScreen, 2000);
-        } else {
-            setTimeout(function() {
-                var next = findNextUnsolved();
-                if (next !== -1) {
-                    gameState.currentStation = next;
-                    renderStation(next);
-                    updateProgress();
-                    showAbi(randomFrom(ABI_COMMENTS.stationComplete));
-                }
-            }, 1500);
-        }
-    } else {
-        // FALSCH
-        feedback.className = "feedback error";
-        feedback.textContent = randomFrom(ERROR_MESSAGES);
-        input.value = "";
-        input.focus();
-        var wrongMsg = randomFrom(ABI_COMMENTS.wrong);
-        showAbi(wrongMsg);
-        if (wrongMsg.indexOf("skeptisch") !== -1) {
-            showAbiExpression("abi-skeptical");
-        } else {
-            showAbiExpression();
-        }
-    }
-}
-
-/** Fun Popup anzeigen */
-function showFunPopup(stationIndex) {
-    var popup = document.getElementById("fun-popup");
-    var text = document.getElementById("fun-popup-text");
-    text.textContent = FUN_TASKS[stationIndex];
-    popup.classList.remove("hidden");
-}
-
-/** Fun Popup schliessen */
-function closeFunPopup() {
-    document.getElementById("fun-popup").classList.add("hidden");
-    
-    // Nächste Station oder Ende
-    if (gameState.solvedStations.every(function(s) { return s; })) {
-        setTimeout(showEndScreen, 500);
-    } else {
-        var next = findNextUnsolved();
-        if (next !== -1) {
-            gameState.currentStation = next;
-            renderStation(next);
-            updateProgress();
-            showAbi(randomFrom(ABI_COMMENTS.stationComplete));
-        }
-    }
-}
-
-/** Nächste ungelöste Station */
-function findNextUnsolved() {
-    for (var i = 0; i < STATIONS.length; i++) {
-        if (!gameState.solvedStations[i]) return i;
-    }
-    return -1;
-}
-
-/** Hinweis anzeigen */
-function showHint(stationIndex) {
-    var station = STATIONS[stationIndex];
-    var hintIdx = gameState.hintsPerStation[stationIndex];
-    var feedback = document.getElementById("feedback-" + stationIndex);
-    
-    if (hintIdx >= station.hints.length) {
-        feedback.className = "feedback hint-msg";
-        feedback.textContent = "Keine weiteren Hinweise verfügbar! \uD83E\uDD37";
-        return;
-    }
-    
-    gameState.points = Math.max(0, gameState.points - station.hintCost);
-    gameState.hintsUsed++;
-    gameState.hintsPerStation[stationIndex]++;
-    
-    feedback.className = "feedback hint-msg";
-    feedback.textContent = "\uD83D\uDCA1 " + station.hints[hintIdx];
-    
-    updatePointsDisplay();
-    syncCurrentRun();
-    showAbi(randomFrom(ABI_COMMENTS.hint));
-}
-
-/** Fortschritt aktualisieren */
-function updateProgress() {
-    var solved = gameState.solvedStations.filter(function(s) { return s; }).length;
-    var percent = Math.round((solved / STATIONS.length) * 100);
-    
-    document.getElementById("progress-bar").style.width = percent + "%";
-    document.getElementById("progress-label").textContent = percent + "%";
-    document.getElementById("progress-text").textContent = "Station " + (gameState.currentStation + 1) + " / " + STATIONS.length;
-}
-
-/** Punkte aktualisieren */
-function updatePointsDisplay() {
-    document.getElementById("points-display").textContent = gameState.points;
-    document.getElementById("hints-display").textContent = gameState.hintsUsed;
-}
-
-/** Aktuellen Team-Stand im Leaderboard speichern */
-function syncCurrentRun() {
-    if (!gameState.runId) return;
-    var solved = gameState.solvedStations.filter(function(s) { return s; }).length;
-    updateTeamRun(gameState.runId, {
-        points: gameState.points,
-        hintsUsed: gameState.hintsUsed,
-        elapsedSeconds: gameState.elapsedSeconds,
-        solvedCount: solved,
-        lastActiveTime: Date.now()
-    });
-}
-
-/** End-Screen */
-function showEndScreen() {
-    clearInterval(gameState.timerInterval);
-
-    var endTime = Date.now();
-
-    // Team-Run als abgeschlossen markieren
-    updateTeamRun(gameState.runId, {
-        points: gameState.points,
-        hintsUsed: gameState.hintsUsed,
-        elapsedSeconds: gameState.elapsedSeconds,
-        solvedCount: STATIONS.length,
-        lastActiveTime: endTime,
-        endTime: endTime,
-        status: "completed"
-    });
-
-    // Platzierung im aktuellen Leaderboard ermitteln
-    var ranked = sortLeaderboard(getRecentTeams().filter(function(t) {
-        return t.status === "completed";
-    }));
-    var rank = 0;
-    for (var i = 0; i < ranked.length; i++) {
-        if (ranked[i].id === gameState.runId) {
-            rank = i + 1;
-            break;
-        }
-    }
-
-    document.getElementById("end-team-name").textContent = gameState.teamName;
-    document.getElementById("end-points").textContent = gameState.points + " / " + MAX_POINTS;
-    document.getElementById("end-time").textContent = formatTime(gameState.elapsedSeconds);
-    document.getElementById("end-hints").textContent = gameState.hintsUsed;
-    document.getElementById("end-rank").textContent = rank > 0 ? ("Platz " + rank + " / " + ranked.length) : "\u2013";
-
-    showScreen("end-screen");
-}
-
-/** Ergebnis kopieren */
-function copyResult() {
-    var text = "AI Escape Room - Ergebnis\n";
-    text += "========================\n";
-    text += "Team: " + gameState.teamName + "\n";
-    text += "Punkte: " + gameState.points + " / " + MAX_POINTS + "\n";
-    text += "Zeit: " + formatTime(gameState.elapsedSeconds) + "\n";
-    text += "Hinweise genutzt: " + gameState.hintsUsed + "\n";
-    text += "========================\n";
-    text += "AI Playground Day at SWICA";
-    
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(function() {
-            alert("Ergebnis in die Zwischenablage kopiert! \uD83D\uDCCB");
-        });
-    } else {
-        // Fallback
-        var ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        alert("Ergebnis kopiert! \uD83D\uDCCB");
-    }
-}
-
-/** Spiel zurücksetzen */
-function resetGame() {
-    clearInterval(gameState.timerInterval);
-    gameState = {
-        teamName: "",
-        runId: null,
-        currentStation: 0,
-        points: 0,
-        hintsUsed: 0,
-        hintsPerStation: STATIONS.map(function() { return 0; }),
-        solvedStations: STATIONS.map(function() { return false; }),
-        startTime: null,
-        timerInterval: null,
-        elapsedSeconds: 0
+// State in ein speicherbares Objekt umwandeln
+function serializeState(s) {
+    return {
+        id: s.id,
+        teamName: s.teamName,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        lastActiveTime: s.lastActiveTime,
+        hintsUsed: s.hintsUsed,
+        solvedBlocks: s.solvedBlocks.slice(),
+        finalSolved: s.finalSolved,
+        bonus: s.bonus || 0,
+        status: s.status,
+        points: computePoints(s)
     };
-    
-    document.getElementById("team-name-input").value = "";
-    closeAdmin();
-    showScreen("start-screen");
 }
 
-// ============================================================
-// LEADERBOARD ANSICHT
-// ============================================================
-
-/** Leaderboard-Screen anzeigen */
-function showLeaderboard() {
-    renderLeaderboard();
-    showScreen("leaderboard-screen");
+// Teams der letzten 2 Stunden holen
+function getRecentTeams() {
+    const now = Date.now();
+    return getAllRuns().filter(r => {
+        const ref = r.endTime || r.lastActiveTime || r.startTime || 0;
+        return (now - ref) <= CONFIG.recentWindowMs;
+    });
 }
 
-/** Leaderboard rendern (sortiert, Top 3 hervorgehoben) */
+// Alte Läufe (älter als 2 Std.) entfernen
+function cleanOldTeamRuns() {
+    const now = Date.now();
+    const kept = getAllRuns().filter(r => {
+        const ref = r.endTime || r.lastActiveTime || r.startTime || 0;
+        return (now - ref) <= CONFIG.recentWindowMs;
+    });
+    setAllRuns(kept);
+    return kept.length;
+}
+
+// Berechnete Zeitdauer eines Laufs
+function runDuration(r) {
+    const end = r.endTime || r.lastActiveTime || Date.now();
+    return Math.max(0, end - (r.startTime || end));
+}
+
+/* =========================================================================
+   13) LEADERBOARD
+   ========================================================================= */
+
+// Sortierlogik: Punkte desc, Zeit asc, Hinweise asc
+function sortLeaderboard(runs) {
+    return runs.slice().sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        const da = runDuration(a), db = runDuration(b);
+        if (da !== db) return da - db;
+        return (a.hintsUsed || 0) - (b.hintsUsed || 0);
+    });
+}
+
 function renderLeaderboard() {
-    // Alte Einträge entfernen und ggf. Hinweis anzeigen
-    var removed = cleanOldTeamRuns();
-    var cleanupMsg = document.getElementById("lb-cleanup-msg");
-    if (cleanupMsg) {
-        if (removed > 0) {
-            cleanupMsg.classList.remove("hidden");
-        } else {
-            cleanupMsg.classList.add("hidden");
-        }
+    const runs = sortLeaderboard(getRecentTeams());
+    const body = $('#leaderboard-body');
+    const empty = $('#leaderboard-empty');
+    body.innerHTML = '';
+
+    if (runs.length === 0) {
+        empty.classList.remove('hidden');
+        return;
     }
+    empty.classList.add('hidden');
 
-    // Abi-Kommentar setzen
-    var abiText = document.getElementById("lb-abi-text");
-    if (abiText) abiText.textContent = randomFrom(LEADERBOARD_COMMENTS);
+    const medals = ['🥇', '🥈', '🥉'];
+    runs.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        if (i < 3) tr.classList.add('rank-' + (i + 1));
+        const rankLabel = i < 3 ? medals[i] : (i + 1);
+        const statusClass = r.status === 'Abgeschlossen' ? 'status-done' : 'status-progress';
+        // Aktuelles Team hervorheben
+        const isMe = state && r.id === state.id;
+        tr.innerHTML = `
+            <td class="rank-cell">${rankLabel}</td>
+            <td>${escapeHtml(r.teamName)}${isMe ? ' <strong>(ihr)</strong>' : ''}</td>
+            <td><strong>${r.points}</strong></td>
+            <td>${formatTime(runDuration(r))}</td>
+            <td>${r.hintsUsed || 0}</td>
+            <td>${(r.solvedBlocks || []).length} / ${BLOCKS.length}</td>
+            <td><span class="status-pill ${statusClass}">${r.status}</span></td>
+        `;
+        body.appendChild(tr);
+    });
+}
 
-    var recent = getRecentTeams();
-    var completed = sortLeaderboard(recent.filter(function(t) { return t.status === "completed"; }));
-    var inProgress = recent.filter(function(t) { return t.status !== "completed"; });
+// Platzierung des aktuellen Teams ermitteln
+function getMyRank() {
+    if (!state) return null;
+    const runs = sortLeaderboard(getRecentTeams());
+    const idx = runs.findIndex(r => r.id === state.id);
+    return idx >= 0 ? idx + 1 : null;
+}
 
-    var list = document.getElementById("leaderboard-list");
+// Rangliste zurücksetzen (alles löschen)
+function resetLeaderboard() {
+    setAllRuns([]);
+}
 
-    // Leer-Zustand
-    if (recent.length === 0) {
-        list.innerHTML = '<div class="lb-empty">Noch keine Teams in den letzten 2 Stunden gespielt. Abi wartet gespannt. \uD83E\uDD16</div>';
+/* =========================================================================
+   14) ENDSCREEN
+   ========================================================================= */
+
+function showEndScreen() {
+    const duration = runDuration(serializeState(state));
+    const rank = getMyRank();
+    $('#end-abi-text').textContent = FINAL_CODE.successMsg;
+
+    const items = [
+        ['Team', state.teamName],
+        ['Punkte', `${state.points} / ${CONFIG.maxPoints}`],
+        ['Benötigte Zeit', formatTime(duration)],
+        ['Genutzte Hinweise', state.hintsUsed],
+        ['Gelöste Blöcke', `${state.solvedBlocks.length} / ${BLOCKS.length}`],
+        ['Platzierung', rank ? `#${rank}` : '–']
+    ];
+    $('#end-result-grid').innerHTML = items.map(([label, val]) => `
+        <div class="result-item">
+            <div class="r-label">${label}</div>
+            <div class="r-value">${escapeHtml(String(val))}</div>
+        </div>
+    `).join('');
+
+    showScreen('screen-end');
+}
+
+// Ergebnis als Text in die Zwischenablage kopieren
+function copyResult() {
+    const duration = runDuration(serializeState(state));
+    const rank = getMyRank();
+    const text =
+`AI Business Escape Room – Ergebnis
+Team: ${state.teamName}
+Punkte: ${state.points} / ${CONFIG.maxPoints}
+Zeit: ${formatTime(duration)}
+Hinweise: ${state.hintsUsed}
+Gelöste Blöcke: ${state.solvedBlocks.length} / ${BLOCKS.length}
+Platzierung: ${rank ? '#' + rank : '–'}`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+            () => toast('Ergebnis kopiert!'),
+            () => fallbackCopy(text)
+        );
+    } else {
+        fallbackCopy(text);
+    }
+}
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast('Ergebnis kopiert!'); }
+    catch (e) { toast('Kopieren nicht möglich.'); }
+    document.body.removeChild(ta);
+}
+
+/* =========================================================================
+   15) NEUES TEAM
+   ========================================================================= */
+
+function newTeam() {
+    stopTimer();
+    state = null;
+    currentBlockId = null;
+    $('#team-name-input').value = '';
+    $('#hud-timer').textContent = '00:00';
+    showScreen('screen-start');
+    $('#abi-container').classList.add('hidden');
+}
+
+/* =========================================================================
+   16) ADMINBEREICH
+   ========================================================================= */
+
+let adminUnlocked = false;
+
+function openAdminPanel() {
+    $('#admin-overlay').classList.remove('hidden');
+    if (adminUnlocked) {
+        $('#admin-login').classList.add('hidden');
+        $('#admin-panel').classList.remove('hidden');
+        renderAdminSolutions();
+        renderAdminTeams();
+    } else {
+        $('#admin-login').classList.remove('hidden');
+        $('#admin-panel').classList.add('hidden');
+        $('#admin-pw').value = '';
+        $('#admin-login-msg').textContent = '';
+    }
+}
+
+function adminLogin() {
+    const pw = $('#admin-pw').value;
+    if (pw === CONFIG.adminPassword) {
+        adminUnlocked = true;
+        $('#admin-login').classList.add('hidden');
+        $('#admin-panel').classList.remove('hidden');
+        renderAdminSolutions();
+        renderAdminTeams();
+    } else {
+        $('#admin-login-msg').textContent = 'Falsches Passwort.';
+        $('#admin-login-msg').className = 'answer-feedback err';
+    }
+}
+
+// Lösungen + Hinweise anzeigen
+function renderAdminSolutions() {
+    const wrap = $('#admin-tab-solutions');
+    let html = BLOCKS.map(b => {
+        const sol = b.answerType === 'keywords'
+            ? `Freitext mit min. ${b.minKeywords} Begriffen aus: ${b.keywords.join(', ')} · oder direkt „${b.acceptedAnswers.join('/')}“`
+            : b.acceptedAnswers.join(' / ');
+        return `
+        <div class="admin-solution-block">
+            <h4>${b.icon} Block ${b.id}: ${b.title}</h4>
+            <div>Lösung: <span class="sol">${escapeHtml(sol)}</span></div>
+            <div>Block-Hinweis (Final-Code): <span class="sol">${b.blockHint}</span></div>
+            <ul>${b.hints.map(h => `<li>${escapeHtml(h)}</li>`).join('')}</ul>
+        </div>`;
+    }).join('');
+
+    html += `
+        <div class="admin-solution-block">
+            <h4>🚪 Finaler Code</h4>
+            <div>Lösung: <span class="sol">${FINAL_CODE.acceptedVariants[0]}</span></div>
+            <div>Akzeptierte Varianten: ${FINAL_CODE.acceptedVariants.map(escapeHtml).join(' · ')}</div>
+        </div>`;
+
+    wrap.innerHTML = html;
+}
+
+// Teams anzeigen (mit Verwaltungsaktionen)
+function renderAdminTeams() {
+    const showOld = $('#admin-show-old').checked;
+    const runs = sortLeaderboard(showOld ? getAllRuns() : getRecentTeams());
+    const wrap = $('#admin-teams-list');
+
+    if (runs.length === 0) {
+        wrap.innerHTML = '<p class="admin-hint">Keine Teams vorhanden.</p>';
         return;
     }
 
-    var medals = ["\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"];
-    var html = "";
+    wrap.innerHTML = runs.map(r => {
+        const blockToggles = BLOCKS.map(b => {
+            const on = (r.solvedBlocks || []).includes(b.id);
+            return `<button class="mini-toggle ${on ? 'on' : ''}" data-toggle-block="${r.id}:${b.id}">B${b.id} ${on ? '✓' : ''}</button>`;
+        }).join('');
 
-    // Abgeschlossene Teams
-    if (completed.length > 0) {
-        completed.forEach(function(t, idx) {
-            var rank = idx + 1;
-            var topClass = rank <= 3 ? " lb-top lb-top-" + rank : "";
-            var rankDisplay = rank <= 3 ? medals[rank - 1] : ("#" + rank);
-            html += '<div class="lb-card' + topClass + '">';
-            html += '<div class="lb-rank">' + rankDisplay + '</div>';
-            html += '<div class="lb-info">';
-            html += '<div class="lb-name">' + escapeHtml(t.teamName) + '</div>';
-            html += '<div class="lb-meta">';
-            html += '<span class="lb-stat">\u2B50 ' + t.points + ' Pkt</span>';
-            html += '<span class="lb-stat">\u23F1\uFE0F ' + formatTime(t.elapsedSeconds) + '</span>';
-            html += '<span class="lb-stat">\uD83D\uDCA1 ' + t.hintsUsed + '</span>';
-            html += '<span class="lb-stat">\uD83C\uDFC1 ' + formatClockTime(t.endTime) + '</span>';
-            html += '</div>';
-            html += '</div>';
-            html += '<div class="lb-status lb-status-done">Abgeschlossen</div>';
-            html += '</div>';
+        return `
+        <div class="admin-team-row">
+            <div class="at-head">
+                <span class="at-name">${escapeHtml(r.teamName)}</span>
+                <span class="at-meta">${r.points} Pkt · ${formatTime(runDuration(r))} · ${r.hintsUsed || 0} Hinweise · ${r.status}${r.bonus ? ' · Bonus ' + r.bonus : ''}</span>
+            </div>
+            <div class="admin-block-toggles">${blockToggles}</div>
+            <div class="admin-team-actions">
+                <button class="btn btn-yellow btn-sm" data-bonus="${r.id}">+${CONFIG.bonusPoints} Bonus</button>
+                <button class="btn btn-ghost btn-sm" data-complete="${r.id}">Als abgeschlossen markieren</button>
+                <button class="btn btn-danger btn-sm" data-remove="${r.id}">Entfernen</button>
+            </div>
+        </div>`;
+    }).join('');
+
+    // Handler verbinden
+    $$('#admin-teams-list [data-bonus]').forEach(btn =>
+        btn.addEventListener('click', () => addBonusPoints(btn.dataset.bonus, CONFIG.bonusPoints)));
+    $$('#admin-teams-list [data-complete]').forEach(btn =>
+        btn.addEventListener('click', () => adminMarkComplete(btn.dataset.complete)));
+    $$('#admin-teams-list [data-remove]').forEach(btn =>
+        btn.addEventListener('click', () => adminRemoveTeam(btn.dataset.remove)));
+    $$('#admin-teams-list [data-toggle-block]').forEach(btn =>
+        btn.addEventListener('click', () => {
+            const [teamId, blockId] = btn.dataset.toggleBlock.split(':');
+            adminToggleBlock(teamId, parseInt(blockId, 10));
+        }));
+}
+
+// Bonuspunkte vergeben
+function addBonusPoints(teamId, points) {
+    const runs = getAllRuns();
+    const idx = runs.findIndex(r => r.id === teamId);
+    if (idx < 0) return;
+    runs[idx].bonus = (runs[idx].bonus || 0) + points;
+    runs[idx].points = recomputeRunPoints(runs[idx]);
+    setAllRuns(runs);
+    syncCurrentStateFromRun(runs[idx]);
+    renderAdminTeams();
+    toast(`Bonus vergeben: +${points} Punkte`);
+}
+
+// Team manuell als abgeschlossen markieren
+function adminMarkComplete(teamId) {
+    const runs = getAllRuns();
+    const idx = runs.findIndex(r => r.id === teamId);
+    if (idx < 0) return;
+    runs[idx].status = 'Abgeschlossen';
+    runs[idx].finalSolved = true;
+    if (!runs[idx].endTime) runs[idx].endTime = Date.now();
+    runs[idx].points = recomputeRunPoints(runs[idx]);
+    setAllRuns(runs);
+    syncCurrentStateFromRun(runs[idx]);
+    renderAdminTeams();
+    toast('Team als abgeschlossen markiert.');
+}
+
+// Einzelnen Block manuell umschalten (gelöst / offen)
+function adminToggleBlock(teamId, blockId) {
+    const runs = getAllRuns();
+    const idx = runs.findIndex(r => r.id === teamId);
+    if (idx < 0) return;
+    const solved = runs[idx].solvedBlocks || [];
+    if (solved.includes(blockId)) {
+        runs[idx].solvedBlocks = solved.filter(b => b !== blockId);
+    } else {
+        solved.push(blockId);
+        runs[idx].solvedBlocks = solved;
+    }
+    runs[idx].points = recomputeRunPoints(runs[idx]);
+    setAllRuns(runs);
+    syncCurrentStateFromRun(runs[idx]);
+    renderAdminTeams();
+}
+
+// Team entfernen
+function adminRemoveTeam(teamId) {
+    let runs = getAllRuns();
+    runs = runs.filter(r => r.id !== teamId);
+    setAllRuns(runs);
+    renderAdminTeams();
+    toast('Team entfernt.');
+}
+
+// Punkte eines gespeicherten Laufs neu berechnen
+function recomputeRunPoints(r) {
+    return (r.solvedBlocks || []).length * CONFIG.pointsPerBlock
+        + (r.finalSolved ? CONFIG.pointsFinalCode : 0)
+        + (r.bonus || 0);
+}
+
+// Falls der Admin das gerade aktive Team ändert, State im Spiel angleichen
+function syncCurrentStateFromRun(run) {
+    if (state && state.id === run.id) {
+        state.solvedBlocks = (run.solvedBlocks || []).slice();
+        state.finalSolved = run.finalSolved;
+        state.bonus = run.bonus || 0;
+        state.status = run.status;
+        state.endTime = run.endTime;
+        state.points = computePoints(state);
+        updateHud();
+        if ($('#screen-game').classList.contains('active')) {
+            loadBlocks();
+        }
+    }
+}
+
+/* =========================================================================
+   17) EVENT-BINDINGS
+   ========================================================================= */
+
+function bindEvents() {
+    // Start
+    $('#btn-start').addEventListener('click', startGame);
+    $('#team-name-input').addEventListener('keydown', e => { if (e.key === 'Enter') startGame(); });
+    $('#btn-show-leaderboard-start').addEventListener('click', () => { renderLeaderboard(); showScreen('screen-leaderboard'); });
+
+    // Header
+    $('#btn-header-leaderboard').addEventListener('click', () => { renderLeaderboard(); showScreen('screen-leaderboard'); });
+
+    // Block-Overlay
+    $('#btn-close-block').addEventListener('click', () => $('#block-overlay').classList.add('hidden'));
+    $('#btn-show-hint').addEventListener('click', () => showHint(currentBlockId));
+    $('#btn-check-answer').addEventListener('click', () => checkAnswer(currentBlockId));
+    $('#btn-check-textarea').addEventListener('click', () => checkAnswer(currentBlockId));
+    $('#answer-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(currentBlockId); });
+
+    // Finaler Code
+    $('#btn-open-final').addEventListener('click', openFinalOverlay);
+    $('#btn-close-final').addEventListener('click', () => $('#final-overlay').classList.add('hidden'));
+    $('#btn-check-final').addEventListener('click', checkFinalCode);
+    $('#final-code-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkFinalCode(); });
+
+    // Endscreen
+    $('#btn-end-leaderboard').addEventListener('click', () => { renderLeaderboard(); showScreen('screen-leaderboard'); });
+    $('#btn-copy-result').addEventListener('click', copyResult);
+    $('#btn-new-team').addEventListener('click', newTeam);
+
+    // Leaderboard
+    $('#btn-refresh-leaderboard').addEventListener('click', renderLeaderboard);
+    $('#btn-clean-old').addEventListener('click', () => {
+        const kept = cleanOldTeamRuns();
+        renderLeaderboard();
+        toast(`Alte Ergebnisse gelöscht. ${kept} Team(s) verbleiben.`);
+    });
+    $('#btn-leaderboard-back').addEventListener('click', () => {
+        showScreen(state ? 'screen-game' : 'screen-start');
+    });
+
+    // Admin
+    $('#btn-admin-open').addEventListener('click', openAdminPanel);
+    $('#btn-close-admin').addEventListener('click', () => $('#admin-overlay').classList.add('hidden'));
+    $('#btn-admin-login').addEventListener('click', adminLogin);
+    $('#admin-pw').addEventListener('keydown', e => { if (e.key === 'Enter') adminLogin(); });
+    $('#admin-show-old').addEventListener('change', renderAdminTeams);
+    $('#btn-admin-clean-old').addEventListener('click', () => {
+        cleanOldTeamRuns(); renderAdminTeams(); toast('Alte Ergebnisse gelöscht.');
+    });
+    $('#btn-admin-reset').addEventListener('click', () => {
+        if (confirm('Wirklich die komplette Rangliste löschen? Das kann nicht rückgängig gemacht werden.')) {
+            resetLeaderboard(); renderAdminTeams(); toast('Rangliste zurückgesetzt.');
+        }
+    });
+
+    // Admin-Tabs
+    $$('.admin-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            $$('.admin-tab').forEach(t => t.classList.remove('active'));
+            $$('.admin-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            $('#admin-tab-' + tab.dataset.tab).classList.add('active');
+            if (tab.dataset.tab === 'teams') renderAdminTeams();
         });
-    }
-
-    // In Bearbeitung
-    if (inProgress.length > 0) {
-        html += '<div class="lb-section-label">In Bearbeitung</div>';
-        inProgress.forEach(function(t) {
-            html += '<div class="lb-card lb-card-progress">';
-            html += '<div class="lb-rank">\u23F3</div>';
-            html += '<div class="lb-info">';
-            html += '<div class="lb-name">' + escapeHtml(t.teamName) + '</div>';
-            html += '<div class="lb-meta">';
-            html += '<span class="lb-stat">\u2B50 ' + t.points + ' Pkt</span>';
-            html += '<span class="lb-stat">\u23F1\uFE0F ' + formatTime(t.elapsedSeconds) + '</span>';
-            html += '<span class="lb-stat">\uD83D\uDCA1 ' + t.hintsUsed + '</span>';
-            html += '<span class="lb-stat">\uD83D\uDCCD ' + t.solvedCount + '/' + (t.totalStations || STATIONS.length) + '</span>';
-            html += '</div>';
-            html += '</div>';
-            html += '<div class="lb-status lb-status-progress">In Bearbeitung</div>';
-            html += '</div>';
-        });
-    }
-
-    list.innerHTML = html;
-}
-
-/** HTML escapen (Schutz vor kaputtem Layout bei Sonderzeichen im Teamnamen) */
-function escapeHtml(str) {
-    var div = document.createElement("div");
-    div.textContent = str == null ? "" : String(str);
-    return div.innerHTML;
-}
-
-// ============================================================
-// ADMIN / MODERATIONSMODUS
-// ============================================================
-
-/** Admin prüfen */
-function checkAdmin(event) {
-    if (event.key === "Enter") {
-        var input = document.getElementById("admin-input");
-        if (input.value.trim().toLowerCase() === "admin") {
-            showAdmin();
-            input.value = "";
-        }
-    }
-}
-
-/** Admin-Panel öffnen */
-function showAdmin() {
-    var panel = document.getElementById("admin-panel");
-    var sol = document.getElementById("admin-solutions");
-    
-    var html = "";
-    STATIONS.forEach(function(s) {
-        html += '<div class="admin-solution-item">';
-        html += '<p><strong>Station ' + s.id + ': ' + s.title + '</strong></p>';
-        html += '<p>Lösung: <strong>' + s.solution + '</strong></p>';
-        html += '<p>Hinweise: ' + s.hints.join(" | ") + '</p>';
-        html += '</div>';
-    });
-    sol.innerHTML = html;
-    
-    document.getElementById("admin-points").textContent = gameState.points;
-    document.getElementById("admin-hints").textContent = gameState.hintsUsed;
-    
-    renderAdminTeams();
-    panel.classList.remove("hidden");
-}
-
-/** Teams im Admin-Panel rendern (aktuell + Archiv) */
-function renderAdminTeams() {
-    var now = Date.now();
-    var all = loadLeaderboard();
-    var recent = [];
-    var archive = [];
-    all.forEach(function(t) {
-        var ref = t.endTime || t.lastActiveTime || t.startTime || 0;
-        if ((now - ref) <= TWO_HOURS_MS) {
-            recent.push(t);
-        } else {
-            archive.push(t);
-        }
     });
 
-    document.getElementById("admin-teams").innerHTML = buildAdminTeamRows(recent, true);
-    document.getElementById("admin-teams-archive").innerHTML =
-        archive.length > 0 ? buildAdminTeamRows(archive, false)
-                           : '<p class="admin-empty">Keine \u00e4lteren Eintr\u00e4ge.</p>';
-}
-
-/** HTML-Zeilen für Admin-Teamliste erzeugen */
-function buildAdminTeamRows(teams, withActions) {
-    if (teams.length === 0) {
-        return '<p class="admin-empty">Keine Teams vorhanden.</p>';
-    }
-    var sorted = sortLeaderboard(teams);
-    var html = "";
-    sorted.forEach(function(t) {
-        var statusLabel = t.status === "completed" ? "Abgeschlossen" : "In Bearbeitung";
-        html += '<div class="admin-team-row">';
-        html += '<div class="admin-team-main">';
-        html += '<strong>' + escapeHtml(t.teamName) + '</strong> ';
-        html += '<span class="admin-team-stats">\u2B50 ' + t.points + ' | \u23F1\uFE0F ' + formatTime(t.elapsedSeconds) + ' | \uD83D\uDCA1 ' + t.hintsUsed + ' | ' + statusLabel + '</span>';
-        html += '</div>';
-        if (withActions) {
-            html += '<div class="admin-team-actions">';
-            html += '<button class="btn btn-bonus btn-mini" onclick="adminAddBonus(\'' + t.id + '\')">+5 Bonus</button>';
-            html += '<button class="btn btn-secondary btn-mini" onclick="adminRenameTeam(\'' + t.id + '\')">Umbenennen</button>';
-            html += '</div>';
-        }
-        html += '</div>';
+    // Overlays per Klick auf den Hintergrund schliessen
+    $$('.overlay').forEach(ov => {
+        ov.addEventListener('click', e => { if (e.target === ov) ov.classList.add('hidden'); });
     });
-    return html;
 }
 
-/** Admin: Bonuspunkte für ein bestimmtes Team */
-function adminAddBonus(runId) {
-    var teams = loadLeaderboard();
-    var team = null;
-    for (var i = 0; i < teams.length; i++) {
-        if (teams[i].id === runId) { team = teams[i]; break; }
-    }
-    if (!team) return;
-    updateTeamRun(runId, { points: team.points + 5 });
-    // Falls es das aktuell laufende Team ist, auch live aktualisieren
-    if (gameState.runId === runId) {
-        gameState.points += 5;
-        updatePointsDisplay();
-        document.getElementById("admin-points").textContent = gameState.points;
-    }
-    renderAdminTeams();
-}
+/* =========================================================================
+   18) INITIALISIERUNG
+   ========================================================================= */
 
-/** Admin: Teamnamen bearbeiten */
-function adminRenameTeam(runId) {
-    var teams = loadLeaderboard();
-    var team = null;
-    for (var i = 0; i < teams.length; i++) {
-        if (teams[i].id === runId) { team = teams[i]; break; }
-    }
-    if (!team) return;
-    var newName = prompt("Neuer Teamname:", team.teamName);
-    if (newName === null) return;
-    newName = newName.trim();
-    if (!newName) return;
-    updateTeamRun(runId, { teamName: newName });
-    if (gameState.runId === runId) {
-        gameState.teamName = newName;
-        var disp = document.getElementById("team-name-display");
-        if (disp) disp.textContent = newName;
-    }
-    renderAdminTeams();
-}
-
-/** Admin: nur alte Ergebnisse löschen */
-function adminClearOld() {
-    var removed = cleanOldTeamRuns();
-    renderAdminTeams();
-    alert(removed > 0 ? (removed + " alte Eintr\u00e4ge gel\u00f6scht.") : "Keine alten Eintr\u00e4ge vorhanden.");
-}
-
-/** Admin: komplettes Leaderboard zurücksetzen */
-function adminResetLeaderboard() {
-    if (!confirm("Wirklich ALLE Ergebnisse l\u00f6schen?")) return;
-    resetLeaderboard();
-    renderAdminTeams();
-    alert("Rangliste zur\u00fcckgesetzt.");
-}
-
-/** Admin schliessen */
-function closeAdmin() {
-    document.getElementById("admin-panel").classList.add("hidden");
-}
-
-/** Bonuspunkte vergeben */
-function addBonus(points, reason) {
-    gameState.points += points;
-    updatePointsDisplay();
-    syncCurrentRun();
-    document.getElementById("admin-points").textContent = gameState.points;
-    renderAdminTeams();
-    alert("+" + points + " Bonuspunkte für: " + reason + "!");
-}
-
-// Tastenkombination Ctrl+Shift+A
-document.addEventListener("keydown", function(e) {
-    if (e.ctrlKey && e.shiftKey && e.key === "A") {
-        e.preventDefault();
-        showAdmin();
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    bindEvents();
+    // Sicherstellen, dass die App auch bei leerem localStorage läuft
+    getAllRuns();
+    showScreen('screen-start');
 });
