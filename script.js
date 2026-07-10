@@ -58,37 +58,43 @@ const BLOCKS = [
     clue: "REX",
     useCase: "AI für E-Mail-Zusammenfassung, Priorisierung und professionelle Antwort nutzen.",
     story:
-      "Abi zeigt eine lange, unübersichtliche E-Mail. Darin stecken viele Informationen, " +
-      "aber nur einige sind wirklich relevant.",
+      "Abi zeigt eine sehr lange, absichtlich chaotische E-Mail voller Nebenschauplätze. " +
+      "Zwischen Kaffeekasse, Parkplätzen und Sommerfest verstecken sich nur DREI wirklich " +
+      "dringende Arbeitsthemen – und ihre Reihenfolge ist entscheidend.",
     task:
-      "Nutzt AI, um:\n" +
-      "• die E-Mail zusammenzufassen\n" +
-      "• die wichtigsten Aufgaben herauszufiltern\n" +
-      "• Prioritäten zu erkennen\n" +
-      "• einen professionellen Antwortentwurf zu schreiben\n" +
-      "• die drei wichtigsten Stichworte zu erkennen\n\n" +
-      "Bildet aus den drei Kernthemen den Block-Hinweis (Excel wird als X abgekürzt).",
-    answerLabel: "Block-Hinweis",
+      "Nutzt AI, um die E-Mail zu entschlüsseln:\n" +
+      "1. Filtert aus dem Rauschen die genau DREI Themen mit einer echten Dringlichkeitsstufe (Stufe 1–3) heraus. Alle anderen Punkte sind Ablenkung.\n" +
+      "2. Ordnet diese drei Themen nach ihrer Stufe (Stufe 1 zuerst, dann 2, dann 3).\n" +
+      "3. Ersetzt jedes Thema durch seinen Code-Buchstaben laut Legende.\n" +
+      "4. Setzt die drei Buchstaben in dieser Reihenfolge zusammen – das ist der Block-Hinweis.\n\n" +
+      "LEGENDE:  Rechnung → R   |   E-Mail → E   |   Excel → X\n" +
+      "(Achtung: Excel wird NICHT mit E, sondern mit X codiert.)",
+    answerLabel: "Block-Hinweis (3 Buchstaben)",
     puzzleHtml:
-      "<strong>Betreff: Mehrere offene Punkte – bitte dringend prüfen</strong>\n\n" +
+      "<strong>Betreff: AW: FWD: diverse Punkte – teils dringend, teils nicht, bitte selbst sortieren</strong>\n\n" +
       "Hallo zusammen\n\n" +
-      "Ich habe verschiedene Rückmeldungen aus dem Bereich erhalten und fasse sie hier kurz zusammen, " +
-      "auch wenn es etwas unübersichtlich geworden ist. Erstens gibt es mehrere offene Rechnungen, bei denen " +
-      "noch unklar ist, ob alle Beträge korrekt erfasst wurden. Zweitens wurde erwähnt, dass gewisse " +
-      "Excel-Auswertungen manuell nachbearbeitet werden müssen, weil doppelte Einträge enthalten sind. " +
-      "Drittens gibt es Rückfragen zu einer internen E-Mail-Vorlage, die aktuell zu lang und nicht klar genug " +
-      "formuliert ist.\n\n" +
-      "Zusätzlich wurde im letzten Meeting festgehalten, dass repetitive Aufgaben stärker automatisiert werden " +
-      "sollen. Besonders wichtig sind aktuell drei Themen: Rechnungskontrolle, Excel-Bereinigung und " +
-      "E-Mail-Kommunikation. Bitte priorisiert diese Punkte und schlagt vor, wie AI oder Copilot unterstützen " +
-      "könnten.\n\n" +
+      "kurz vorweg, das ist etwas länger geworden. Die Kaffeekasse ist übrigens wieder leer, bitte denkt " +
+      "an euren Beitrag. Ausserdem sind zwei Parkplätze in der Tiefgarage ab nächster Woche gesperrt, und " +
+      "das Sommerfest-Datum steht noch nicht fest – Rückmeldungen dazu sind nett, aber nicht eilig.\n\n" +
+      "Nun zum Inhaltlichen, durcheinander wie immer:\n" +
+      "– Der Meetingraum B12 muss irgendwann neu möbliert werden (kein Termindruck).\n" +
+      "– Die Rechnungskontrolle ist kritisch: mehrere Beträge sind womöglich falsch erfasst. " +
+      "Das hat DRINGLICHKEITSSTUFE 1 und muss bis morgen früh erledigt sein.\n" +
+      "– Jemand fragte nach neuen Druckerpatronen (unwichtig, bitte später).\n" +
+      "– Die interne E-Mail-Kommunikation bzw. unsere Vorlage ist zu lang und unklar. " +
+      "Das ist STUFE 2 und sollte bis Ende Woche stehen.\n" +
+      "– Die Excel-Bereinigung (doppelte Einträge entfernen) ist wichtig, aber hat Zeit bis nächste Woche: " +
+      "DRINGLICHKEITSSTUFE 3.\n" +
+      "– Und ja, der Drucker im 2. Stock klemmt wieder. Nicht eilig.\n\n" +
+      "Bitte priorisiert die wirklich dringenden Punkte und lasst den Rest weg. Wer es schafft, die drei " +
+      "dringenden Themen in der richtigen Reihenfolge zu codieren, hat den ersten Schlüssel.\n\n" +
       "Freundliche Grüsse\nBusiness Coordination",
     checkType: "exact",
     accepted: ["rex"],
     hints: [
-      "Abi sagt: Nicht jede Information in der E-Mail ist gleich wichtig. Suche die drei zentralen Arbeitsthemen.",
-      "Abi sagt: Achte auf Rechnung, Excel und E-Mail. Daraus entsteht der erste Hinweis.",
-      "Abi sagt: Für den Code wird Excel als X abgekürzt.",
+      "Abi sagt: Ignoriert alles ohne Dringlichkeitsstufe – Kaffeekasse, Parkplatz, Sommerfest, Drucker und Möbel sind reines Rauschen.",
+      "Abi sagt: Nur drei Punkte tragen eine Stufe: Rechnungskontrolle (1), E-Mail-Kommunikation (2), Excel-Bereinigung (3). Genau diese Reihenfolge zählt.",
+      "Abi sagt: Codiert nach Legende und denkt daran: Excel ist das X, nicht das E. Stufe 1→2→3 ergibt drei Buchstaben.",
     ],
     successText: "Abi sagt: Sehr gut. Ihr habt das E-Mail-Chaos gezähmt. Outlook wäre stolz.",
   },
@@ -100,28 +106,31 @@ const BLOCKS = [
     clue: "2000",
     useCase: "AI nutzen, um Rechnungsinformationen aus Text zu extrahieren und strukturiert in Excel zu übertragen.",
     story:
-      "Abi findet mehrere fiktive Rechnungsnotizen. Die Daten sind nicht sauber strukturiert. " +
-      "Erstellt daraus eine Excel-Tabelle und berechnet die Summe.",
+      "Abi kippt einen ganzen Stapl unsortierter Rechnungsnotizen aus: verschiedene Währungen, " +
+      "Duplikate, stornierte und noch nicht freigegebene Belege. Nur ein Teil davon zählt wirklich.",
     task:
-      "Nutzt AI oder Copilot, um:\n" +
-      "• Rechnungsnummern zu erkennen\n" +
-      "• Lieferanten und Daten zu erfassen\n" +
-      "• Beträge zu extrahieren\n" +
-      "• die doppelte Rechnung zu finden\n" +
-      "• die Summe der gültigen Rechnungsbeträge zu berechnen (ohne Duplikat)",
+      "Nutzt AI oder Copilot und wendet ALLE Regeln an, sonst stimmt die Summe nicht:\n" +
+      "1. Zählt NUR Rechnungen in CHF. Fremdwährungen (EUR usw.) werden komplett ignoriert.\n" +
+      "2. Zählt NUR den Status \"offen\" oder \"geprüft\". \"storniert\", \"Entwurf\" und \"doppelt erfasst\" fallen weg.\n" +
+      "3. Entfernt Duplikate: gleiche Rechnungsnummer = nur EINMAL zählen.\n" +
+      "4. Bildet die Summe der übrig gebliebenen gültigen Beträge.",
     answerLabel: "Summe der gültigen Beträge (CHF)",
     puzzleHtml:
-      "Rechnung A: Lieferant OfficePro AG, Rechnungsnummer OP-2041, Datum 03.04.2026, Betrag CHF 430.00, Status offen.\n" +
-      "Rechnung B: Lieferant DataClean GmbH, Rechnungsnummer DC-1188, Datum 07.04.2026, Betrag CHF 820.00, Status geprüft.\n" +
-      "Rechnung C: Lieferant PrintPlus AG, Rechnungsnummer PP-5510, Datum 08.04.2026, Betrag CHF 275.00, Status offen.\n" +
-      "Rechnung D: Lieferant OfficePro AG, Rechnungsnummer OP-2041, Datum 03.04.2026, Betrag CHF 430.00, Status doppelt erfasst.\n" +
-      "Rechnung E: Lieferant AI Services AG, Rechnungsnummer AI-9001, Datum 10.04.2026, Betrag CHF 475.00, Status geprüft.",
+      "Rechnung A: OfficePro AG, Nr. OP-2041, 03.04.2026, CHF 430.00, Status offen.\n" +
+      "Rechnung B: DataClean GmbH, Nr. DC-1188, 07.04.2026, CHF 820.00, Status geprüft.\n" +
+      "Rechnung C: PrintPlus AG, Nr. PP-5510, 08.04.2026, CHF 275.00, Status offen.\n" +
+      "Rechnung D: OfficePro AG, Nr. OP-2041, 03.04.2026, CHF 430.00, Status doppelt erfasst.\n" +
+      "Rechnung E: AI Services AG, Nr. AI-9001, 10.04.2026, CHF 475.00, Status geprüft.\n" +
+      "Rechnung F: CloudNet AG, Nr. CN-3300, 11.04.2026, CHF 600.00, Status storniert.\n" +
+      "Rechnung G: EuroPrint SARL, Nr. EP-7788, 12.04.2026, EUR 900.00, Status geprüft.\n" +
+      "Rechnung H: MailFlow AG, Nr. MF-1200, 12.04.2026, CHF 350.00, Status Entwurf.\n" +
+      "Rechnung I: DataClean GmbH, Nr. DC-1188, 07.04.2026, CHF 820.00, Status geprüft (Zweitkopie).",
     checkType: "exact",
     accepted: ["2000", "2000.00", "chf 2000", "2'000"],
     hints: [
-      "Abi sagt: Eine Rechnung taucht doppelt auf. Doppelt hält hier nicht besser.",
-      "Abi sagt: Entferne die doppelte OP-2041.",
-      "Abi sagt: Addiere nur die gültigen Rechnungsbeträge.",
+      "Abi sagt: Werft zuerst alles raus, was nicht CHF ist – die EUR-Rechnung zählt nicht. Und storniert bzw. Entwurf sind keine gültigen Belege.",
+      "Abi sagt: OP-2041 und DC-1188 tauchen je zweimal auf. Gleiche Rechnungsnummer heisst: nur einmal zählen.",
+      "Abi sagt: Übrig bleiben genau vier gültige Beträge. Addiert nur diese – rund, sauber, ohne Rappen.",
     ],
     successText: "Abi sagt: Stark. Ihr habt die Rechnungen sortiert, ohne dass Excel geweint hat.",
   },
@@ -133,32 +142,33 @@ const BLOCKS = [
     clue: "IT",
     useCase: "Excel-Daten analysieren, Duplikate erkennen, Auffälligkeiten finden und Erkenntnisse zusammenfassen.",
     story:
-      "Abi öffnet eine chaotische Excel-Tabelle mit Abteilungen, Kosten, Status und Kommentaren. " +
-      "Findet heraus, welche Abteilung den auffälligsten Kostenanstieg hat.",
+      "Abi öffnet eine grosse, unaufgeräumte Excel-Tabelle. Manche Abteilungen steigen prozentual " +
+      "stark, sind aber sauber begründet. Eine Zeile ist doppelt. Gesucht ist der EINE verdächtige Fall.",
     task:
-      "Nutzt Copilot oder AI, um:\n" +
-      "• die Daten zu bereinigen\n" +
-      "• Auffälligkeiten zu erkennen\n" +
-      "• Kosten zu vergleichen\n" +
-      "• doppelte Einträge nicht doppelt zu zählen\n" +
-      "• die richtige Abteilung zu identifizieren",
-    answerLabel: "Auffälligste Abteilung",
+      "Nutzt Copilot oder AI und findet die auffälligste Abteilung nach dieser strengen Definition:\n" +
+      "• Berechnet je Abteilung die Kostensteigerung von März auf April (absolut UND prozentual).\n" +
+      "• Duplikate (identische Zeile) zählen nur EINMAL – nicht doppelt gewichten.\n" +
+      "• AUFFÄLLIG ist NUR eine Steigerung, die WEDER geplant/budgetiert NOCH durch einen bekannten Grund erklärt ist.\n" +
+      "• Eine hohe Prozentzahl allein reicht nicht, wenn der Anstieg begründet ist. Nennt die eine übrig bleibende Abteilung.",
+    answerLabel: "Verdächtige Abteilung",
     puzzleHtml:
       "<table>" +
-      "<tr><th>Abteilung</th><th>Kosten März</th><th>Kosten April</th><th>Status</th><th>Kommentar</th></tr>" +
-      "<tr><td>HR</td><td>1200</td><td>1300</td><td>normal</td><td>leichte Erhöhung wegen Schulung</td></tr>" +
-      "<tr><td>IT</td><td>2500</td><td>4700</td><td>auffällig</td><td>mehrere neue Tools und Lizenzen</td></tr>" +
+      "<tr><th>Abteilung</th><th>März</th><th>April</th><th>Status</th><th>Kommentar</th></tr>" +
+      "<tr><td>HR</td><td>1200</td><td>1300</td><td>normal</td><td>+8% wegen geplanter Schulung, budgetiert</td></tr>" +
+      "<tr><td>Innovation</td><td>500</td><td>1500</td><td>geplant</td><td>+200% einmalige Anschubfinanzierung, im Budget freigegeben</td></tr>" +
+      "<tr><td>Logistik</td><td>3000</td><td>5000</td><td>erklärt</td><td>+2000 CHF durch bekannte Treibstoff-Preiserhöhung, dokumentiert</td></tr>" +
+      "<tr><td>IT</td><td>2500</td><td>4700</td><td>prüfen</td><td>+2200 CHF, mehrere neue Tools, keine Freigabe dokumentiert, unklar</td></tr>" +
       "<tr><td>Marketing</td><td>1800</td><td>1900</td><td>normal</td><td>Kampagnenkosten stabil</td></tr>" +
       "<tr><td>Finanzen</td><td>1600</td><td>1650</td><td>normal</td><td>kaum Veränderung</td></tr>" +
-      "<tr><td>Kundenservice</td><td>2200</td><td>2600</td><td>prüfen</td><td>höhere Supportlast</td></tr>" +
-      "<tr><td>IT</td><td>2500</td><td>4700</td><td>doppelt</td><td>doppelte Zeile zur Kontrolle</td></tr>" +
+      "<tr><td>Kundenservice</td><td>2200</td><td>2600</td><td>normal</td><td>saisonale Supportlast, jährlich erwartet</td></tr>" +
+      "<tr><td>IT</td><td>2500</td><td>4700</td><td>doppelt</td><td>identische Kontrollzeile, versehentlich zweimal erfasst</td></tr>" +
       "</table>",
     checkType: "exact",
     accepted: ["it", "it-abteilung", "abteilung it"],
     hints: [
-      "Abi sagt: Schau auf den Unterschied zwischen März und April.",
-      "Abi sagt: Eine Zeile ist doppelt. Nicht zweimal zählen.",
-      "Abi sagt: Die grösste auffällige Differenz liegt bei einer technischen Abteilung.",
+      "Abi sagt: Lasst euch von der Prozentzahl nicht täuschen. Innovation steigt +200%, ist aber ausdrücklich geplant und budgetiert – also nicht verdächtig.",
+      "Abi sagt: Logistik steigt um 2000 CHF, hat aber einen dokumentierten, bekannten Grund. Eine Zeile ist zudem ein exaktes Duplikat – nicht doppelt zählen.",
+      "Abi sagt: Übrig bleibt eine technische Abteilung mit dem grössten UNERKLÄRTEN Anstieg und ohne dokumentierte Freigabe.",
     ],
     successText: "Abi sagt: Korrekt. Die IT hat gewonnen. Ob sie das wollte, ist eine andere Frage.",
   },
@@ -173,26 +183,31 @@ const BLOCKS = [
       "Abi präsentiert ein typisches Arbeitsproblem: Ein Team verliert jede Woche Zeit durch manuelle " +
       "Nachbearbeitung, unklare E-Mails und wiederkehrende Excel-Auswertungen.",
     task:
-      "Entwickelt mit AI einen kurzen Verbesserungsvorschlag. Er muss mindestens diese vier Elemente enthalten:\n" +
-      "1. E-Mail-Inhalte automatisch zusammenfassen\n" +
-      "2. Rechnungsdaten strukturiert in Excel übertragen\n" +
-      "3. Auffälligkeiten oder Duplikate prüfen\n" +
-      "4. Zusammenfassung oder Antwortmail generieren\n\n" +
-      "Schreibt euren Vorschlag ins Feld (mind. 4 passende Schlüsselbegriffe) – oder gebt direkt \"FLOW\" ein.",
-    answerLabel: "Euer Verbesserungsvorschlag",
+      "Zwei Wege führen zum Ziel – beide sind knifflig:\n\n" +
+      "WEG A (Freitext): Entwickelt mit AI einen konkreten Verbesserungsvorschlag, der den ganzen Ablauf " +
+      "beschreibt. Der Vorschlag muss mindestens 5 der geforderten Fachbegriffe sinnvoll enthalten " +
+      "(z. B. zusammenfassen, Excel, Duplikate, E-Mail, Rechnungsdaten, Auffälligkeiten, automatisieren, Workflow, strukturieren).\n\n" +
+      "WEG B (Geheimcode): Im Soll-Prozess unten ist ein 4-Buchstaben-Codewort versteckt. Lest die " +
+      "ANFANGSBUCHSTABEN der vier nummerierten Prozessschritte von oben nach unten. Gebt dieses Wort ein.",
+    answerLabel: "Vorschlag (5+ Begriffe) ODER verstecktes Codewort",
     puzzleHtml:
-      "Ein Team erhält jede Woche mehrere E-Mails mit Rechnungsinformationen. Die Informationen sind " +
-      "uneinheitlich formuliert. Danach werden Beträge manuell in Excel übertragen. Anschliessend prüft eine " +
-      "Person, ob Daten fehlen oder doppelt vorkommen. Am Ende wird eine Zusammenfassung per E-Mail an die " +
-      "verantwortliche Person geschickt. Dieser Prozess ist langsam, fehleranfällig und wiederholt sich jede Woche.",
+      "<strong>Ist-Zustand:</strong> Ein Team erhält jede Woche mehrere E-Mails mit Rechnungsinformationen. " +
+      "Die Angaben sind uneinheitlich. Beträge werden manuell in Excel übertragen, jemand prüft von Hand auf " +
+      "fehlende oder doppelte Daten, am Ende geht eine Zusammenfassung per E-Mail raus. Langsam, fehleranfällig, " +
+      "jede Woche aufs Neue.\n\n" +
+      "<strong>Soll-Prozess (4 Schritte – achtet auf die Anfangsbuchstaben):</strong>\n" +
+      "1. Filtern der eingehenden E-Mails und Inhalte automatisch zusammenfassen.\n" +
+      "2. Laden der Rechnungsdaten strukturiert nach Excel.\n" +
+      "3. Ordnen und Prüfen auf Auffälligkeiten und Duplikate.\n" +
+      "4. Weiterleiten der fertigen Zusammenfassung als Antwortmail.",
     checkType: "keywords",
-    accepted: ["flow"], // direkte Lösung ebenfalls akzeptiert
-    keywords: ["zusammenfassen", "excel", "duplikate", "e-mail", "email", "rechnungsdaten", "auffälligkeiten", "automatisieren", "workflow"],
-    minKeywords: 4,
+    accepted: ["flow"], // verstecktes Codewort (Akrostichon F-L-O-W) ebenfalls akzeptiert
+    keywords: ["zusammenfassen", "excel", "duplikate", "e-mail", "email", "rechnungsdaten", "auffälligkeiten", "automatisieren", "workflow", "strukturieren"],
+    minKeywords: 5,
     hints: [
-      "Abi sagt: Denkt an einen Ablauf vom Eingang der E-Mail bis zur fertigen Antwort.",
-      "Abi sagt: AI kann helfen beim Zusammenfassen, Strukturieren, Prüfen und Formulieren.",
-      "Abi sagt: Gesucht ist ein Vorschlag, der den Prozess als Workflow denkt.",
+      "Abi sagt: Für den Freitext reichen ein paar Stichworte nicht – ich zähle mindestens 5 echte Fachbegriffe im Zusammenhang.",
+      "Abi sagt: Es gibt eine Abkürzung. Schaut euch den nummerierten Soll-Prozess an und lest nur den jeweils ersten Buchstaben.",
+      "Abi sagt: Filtern, Laden, Ordnen, Weiterleiten – erste Buchstaben von oben nach unten ergeben ein Wort mit vier Buchstaben.",
     ],
     successText:
       "Abi sagt: Sehr gut. Ihr habt aus Chaos einen Workflow gemacht. Das klingt fast nach Magie, ist aber Copilot.",
