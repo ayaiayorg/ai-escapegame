@@ -1,304 +1,271 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Business Escape Room – AI Playground Day at SWICA</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Business Escape Room – AI Playground Day at SWICA</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
-    <!-- =========================================================================
-         ABI GUIDE – der freundliche AI-Begleiter (nur im Spiel sichtbar)
-         ========================================================================= -->
-    <div id="abi-container" class="abi-container hidden">
-        <div class="abi-character" aria-hidden="true">
-            <div class="abi-antenna"></div>
-            <div class="abi-head">
-                <div class="abi-eye left"></div>
-                <div class="abi-eye right"></div>
-                <div class="abi-mouth"></div>
-            </div>
-        </div>
-        <div class="abi-speech">
-            <p id="abi-text">Hallo, ich bin Abi. Los geht's!</p>
-        </div>
+  <!-- =========================================================
+       KOPFBEREICH (Statusleiste) – nur sichtbar wenn ein Team spielt
+       ========================================================= -->
+  <header id="statusBar" class="status-bar hidden">
+    <div class="status-brand">
+      <span class="logo-dot"></span>
+      <span class="brand-text">AI Business Escape Room</span>
     </div>
+    <div class="status-metrics">
+      <div class="metric"><span class="metric-label">Team</span><span id="statTeam" class="metric-value">–</span></div>
+      <div class="metric"><span class="metric-label">Punkte</span><span id="statPoints" class="metric-value">0</span></div>
+      <div class="metric"><span class="metric-label">Zeit</span><span id="statTimer" class="metric-value">00:00</span></div>
+      <div class="metric"><span class="metric-label">Hinweise</span><span id="statHints" class="metric-value">0</span></div>
+      <div class="metric"><span class="metric-label">Blöcke</span><span id="statBlocks" class="metric-value">0 / 4</span></div>
+    </div>
+  </header>
 
-    <!-- =========================================================================
+  <!-- Fortschrittsbalken -->
+  <div id="progressWrap" class="progress-wrap hidden">
+    <div id="progressBar" class="progress-bar"></div>
+  </div>
+
+  <main class="container">
+
+    <!-- =========================================================
          STARTSCREEN
-         ========================================================================= -->
-    <section id="screen-start" class="screen active">
-        <div class="start-card">
-            <div class="brand-badge">AI Playground Day</div>
-            <h1 class="start-title">AI Business <span class="accent">Escape Room</span></h1>
-            <p class="start-subtitle">AI Playground Day at SWICA</p>
+         ========================================================= -->
+    <section id="screenStart" class="screen">
+      <div class="hero">
+        <div class="hero-badge">AI Playground Day at SWICA</div>
+        <h1 class="hero-title">AI Business Escape Room</h1>
+        <p class="hero-subtitle">Löst echte Business-Aufgaben mit AI, Copilot &amp; Excel</p>
 
-            <div class="abi-intro">
-                <div class="abi-character small" aria-hidden="true">
-                    <div class="abi-antenna"></div>
-                    <div class="abi-head">
-                        <div class="abi-eye left"></div>
-                        <div class="abi-eye right"></div>
-                        <div class="abi-mouth"></div>
-                    </div>
-                </div>
-                <p class="intro-text">
-                    Willkommen im AI Business Escape Room. Abi begleitet euch durch mehrere
-                    kurze Business-Challenges. Nutzt AI, Copilot und Excel, um E-Mails zu
-                    analysieren, Rechnungsdaten zu strukturieren, Excel-Daten auszuwerten
-                    und Arbeitsprozesse zu verbessern.
-                </p>
-            </div>
-
-            <div class="team-input-wrap">
-                <label for="team-name-input">Teamname</label>
-                <input type="text" id="team-name-input" placeholder="z. B. Team Copilot" maxlength="40" autocomplete="off">
-            </div>
-
-            <div class="start-buttons">
-                <button id="btn-start" class="btn btn-primary btn-lg">🚀 Spiel starten</button>
-                <button id="btn-show-leaderboard-start" class="btn btn-ghost">🏆 Rangliste anzeigen</button>
-            </div>
+        <!-- Abi Sprechblase -->
+        <div class="abi-box">
+          <div class="abi-avatar">🤖</div>
+          <div class="abi-bubble">
+            <strong>Abi</strong>
+            <p>Willkommen im AI Business Escape Room. Ich begleite euch durch mehrere kurze Business-Challenges.
+            Nutzt AI, Copilot und Excel, um E-Mails zu analysieren, Rechnungsdaten zu strukturieren,
+            Excel-Daten auszuwerten und Arbeitsprozesse zu verbessern.</p>
+          </div>
         </div>
 
-        <button id="btn-admin-open" class="admin-footer-btn" title="Adminbereich">🔒 Admin</button>
+        <div class="start-form">
+          <label for="teamNameInput" class="field-label">Teamname</label>
+          <input id="teamNameInput" type="text" class="text-input" placeholder="z. B. Team Copilot" maxlength="40" />
+          <div class="btn-row">
+            <button id="btnStart" class="btn btn-primary">🚀 Spiel starten</button>
+            <button id="btnShowLeaderboardStart" class="btn btn-ghost">🏆 Rangliste anzeigen</button>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- =========================================================================
-         SPIEL – ÜBERSICHT MIT BLÖCKEN
-         ========================================================================= -->
-    <section id="screen-game" class="screen">
-        <!-- Statusleiste oben: immer sichtbar -->
-        <header class="game-header">
-            <div class="stat">
-                <span class="stat-label">Team</span>
-                <span class="stat-value" id="hud-team">–</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Punkte</span>
-                <span class="stat-value" id="hud-points">0</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Timer</span>
-                <span class="stat-value" id="hud-timer">00:00</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Hinweise</span>
-                <span class="stat-value" id="hud-hints">0</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Gelöst</span>
-                <span class="stat-value" id="hud-solved">0 / 4</span>
-            </div>
-            <button id="btn-header-leaderboard" class="btn btn-ghost btn-sm">🏆 Rangliste</button>
-        </header>
+    <!-- =========================================================
+         BLOCK-ÜBERSICHT
+         ========================================================= -->
+    <section id="screenOverview" class="screen hidden">
+      <div class="section-head">
+        <h2>Wählt einen Block</h2>
+        <p class="muted">Die vier Blöcke sind unabhängig und in beliebiger Reihenfolge lösbar. Jeder Block gibt einen Hinweis für den finalen Code.</p>
+      </div>
 
-        <!-- Fortschrittsbalken -->
-        <div class="progress-wrap">
-            <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
-            <span id="progress-label" class="progress-text">0 % gelöst</span>
+      <div class="abi-box compact">
+        <div class="abi-avatar">🤖</div>
+        <div class="abi-bubble">
+          <p id="abiOverviewText">Abi sagt: Sucht euch einen Block aus. Es gibt keine falsche Reihenfolge – nur die richtige Neugier.</p>
         </div>
+      </div>
 
-        <div class="overview-intro">
-            <h2>Wählt einen Block – in beliebiger Reihenfolge</h2>
-            <p>Jeder gelöste Block liefert einen Hinweis für den finalen Code.</p>
+      <!-- Karten werden per JavaScript eingefügt -->
+      <div id="blockGrid" class="block-grid"></div>
+
+      <!-- Finaler Code Karte -->
+      <div id="finalCard" class="final-card locked">
+        <div class="final-card-inner">
+          <div class="final-icon">🔐</div>
+          <div class="final-body">
+            <h3>Finaler Escape Room Code</h3>
+            <p id="finalCardStatus" class="muted">Gesperrt – löst zuerst alle 4 Blöcke.</p>
+          </div>
+          <button id="btnOpenFinal" class="btn btn-secondary" disabled>Finalen Code öffnen</button>
         </div>
-
-        <!-- Karten der Blöcke werden dynamisch eingefügt -->
-        <div id="blocks-grid" class="blocks-grid"></div>
-
-        <!-- Finaler Code Karte -->
-        <div id="final-card" class="final-card locked">
-            <div class="final-lock">🔒</div>
-            <div class="final-content">
-                <h3>Finaler Escape Room Code</h3>
-                <p id="final-card-status">Löst alle 4 Blöcke, um den finalen Code freizuschalten.</p>
-            </div>
-            <button id="btn-open-final" class="btn btn-primary" disabled>Finalen Code eingeben</button>
-        </div>
+      </div>
     </section>
 
-    <!-- =========================================================================
-         BLOCK-DETAIL (Modal/Overlay)
-         ========================================================================= -->
-    <div id="block-overlay" class="overlay hidden">
-        <div class="overlay-card block-detail">
-            <button class="overlay-close" id="btn-close-block" title="Schliessen">✕</button>
-            <div class="block-detail-header">
-                <span id="block-detail-icon" class="block-icon-lg">📧</span>
-                <div>
-                    <h2 id="block-detail-title">Blocktitel</h2>
-                    <p id="block-detail-meta" class="block-meta-line">Dauer · 5 Punkte</p>
-                </div>
-            </div>
+    <!-- =========================================================
+         EINZELNER BLOCK (Detailansicht)
+         ========================================================= -->
+    <section id="screenBlock" class="screen hidden">
+      <button class="btn btn-link" id="btnBackFromBlock">← Zurück zur Übersicht</button>
 
-            <p id="block-detail-story" class="block-story"></p>
-
-            <div class="block-task-box">
-                <h4>Eure Aufgabe</h4>
-                <div id="block-detail-task"></div>
-            </div>
-
-            <div class="block-riddle" id="block-detail-riddle"></div>
-
-            <!-- Hinweisbereich -->
-            <div class="hint-area">
-                <button id="btn-show-hint" class="btn btn-yellow btn-sm">💡 Hinweis anzeigen</button>
-                <span id="hint-counter" class="hint-info"></span>
-                <ul id="hint-list" class="hint-list"></ul>
-            </div>
-
-            <!-- Antwortbereich -->
-            <div class="answer-area">
-                <label id="answer-label" for="answer-input">Eure Lösung</label>
-                <div class="answer-row">
-                    <input type="text" id="answer-input" placeholder="Antwort eingeben …" autocomplete="off">
-                    <button id="btn-check-answer" class="btn btn-primary">Prüfen</button>
-                </div>
-                <textarea id="answer-textarea" class="hidden" rows="5" placeholder="Euren Verbesserungsvorschlag hier eingeben …"></textarea>
-                <button id="btn-check-textarea" class="btn btn-primary hidden">Vorschlag prüfen</button>
-                <p id="answer-feedback" class="answer-feedback"></p>
-            </div>
+      <div class="block-detail card">
+        <div class="block-detail-head">
+          <span id="blockIcon" class="block-detail-icon">📧</span>
+          <div>
+            <h2 id="blockTitle">Blocktitel</h2>
+            <p id="blockMeta" class="muted">Dauer · 5 Punkte</p>
+          </div>
+          <span id="blockStatusBadge" class="badge badge-open">Offen</span>
         </div>
-    </div>
 
-    <!-- =========================================================================
-         FINALER CODE (Modal/Overlay)
-         ========================================================================= -->
-    <div id="final-overlay" class="overlay hidden">
-        <div class="overlay-card">
-            <button class="overlay-close" id="btn-close-final" title="Schliessen">✕</button>
-            <h2 class="final-heading">🚪 Die letzte Tür</h2>
-            <p class="final-story">
-                Abi öffnet die letzte digitale Tür. Auf dem Bildschirm erscheinen alle
-                gesammelten Hinweise. Kombiniert sie richtig!
-            </p>
-            <div id="collected-hints" class="collected-hints"></div>
-            <div class="answer-row">
-                <input type="text" id="final-code-input" placeholder="z. B. REX-2000-IT-FLOW" autocomplete="off">
-                <button id="btn-check-final" class="btn btn-primary">Tür öffnen</button>
-            </div>
-            <p id="final-feedback" class="answer-feedback"></p>
+        <p id="blockUseCase" class="use-case"></p>
+
+        <div class="abi-box compact">
+          <div class="abi-avatar">🤖</div>
+          <div class="abi-bubble">
+            <p id="blockStory"></p>
+          </div>
         </div>
-    </div>
 
-    <!-- =========================================================================
+        <h4>Aufgabe</h4>
+        <p id="blockTask" class="task-text"></p>
+
+        <!-- Rätselinhalt (Text oder Tabelle) -->
+        <div id="blockPuzzle" class="puzzle-box"></div>
+
+        <!-- Antwortbereich -->
+        <div class="answer-area">
+          <label for="answerInput" class="field-label" id="answerLabel">Eure Lösung</label>
+          <input id="answerInput" type="text" class="text-input" placeholder="Antwort eingeben …" />
+          <div class="btn-row">
+            <button id="btnCheckAnswer" class="btn btn-primary">Antwort prüfen</button>
+            <button id="btnHint" class="btn btn-ghost">💡 Hinweis (<span id="hintCountLabel">0</span>/3)</button>
+          </div>
+          <p id="answerFeedback" class="feedback"></p>
+        </div>
+
+        <!-- Angezeigte Hinweise -->
+        <div id="hintList" class="hint-list"></div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         FINALER CODE
+         ========================================================= -->
+    <section id="screenFinal" class="screen hidden">
+      <button class="btn btn-link" id="btnBackFromFinal">← Zurück zur Übersicht</button>
+
+      <div class="card final-screen">
+        <h2>🔓 Finaler Escape Room Code</h2>
+        <div class="abi-box compact">
+          <div class="abi-avatar">🤖</div>
+          <div class="abi-bubble">
+            <p>Abi sagt: Ich öffne die letzte digitale Tür. Kombiniert eure gesammelten Hinweise richtig, dann seid ihr frei.</p>
+          </div>
+        </div>
+
+        <h4>Gesammelte Hinweise</h4>
+        <div id="collectedClues" class="clue-grid"></div>
+
+        <div class="answer-area">
+          <label for="finalCodeInput" class="field-label">Finaler Code</label>
+          <input id="finalCodeInput" type="text" class="text-input" placeholder="z. B. XXX-0000-XX-XXXX" />
+          <div class="btn-row">
+            <button id="btnCheckFinal" class="btn btn-primary">Code entschlüsseln</button>
+          </div>
+          <p id="finalFeedback" class="feedback"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
          ENDSCREEN
-         ========================================================================= -->
-    <section id="screen-end" class="screen">
-        <div class="end-card">
-            <div class="confetti-emoji">🎉</div>
-            <h1>Gratulation!</h1>
-            <p class="end-subtitle">Ihr habt den AI Business Escape Room gemeistert!</p>
+         ========================================================= -->
+    <section id="screenEnd" class="screen hidden">
+      <div class="card end-card">
+        <div class="confetti">🎉</div>
+        <h2>Gratulation, ihr habt den AI Business Escape Room gemeistert!</h2>
 
-            <div class="abi-intro center">
-                <div class="abi-character small" aria-hidden="true">
-                    <div class="abi-antenna"></div>
-                    <div class="abi-head">
-                        <div class="abi-eye left"></div>
-                        <div class="abi-eye right"></div>
-                        <div class="abi-mouth"></div>
-                    </div>
-                </div>
-                <p class="intro-text" id="end-abi-text"></p>
-            </div>
-
-            <div class="result-grid" id="end-result-grid"></div>
-
-            <div class="end-buttons">
-                <button id="btn-end-leaderboard" class="btn btn-primary">🏆 Rangliste anzeigen</button>
-                <button id="btn-copy-result" class="btn btn-ghost">📋 Ergebnis kopieren</button>
-                <button id="btn-new-team" class="btn btn-ghost">🔄 Neues Team starten</button>
-            </div>
+        <div class="abi-box compact">
+          <div class="abi-avatar">🤖</div>
+          <div class="abi-bubble">
+            <p>Abi sagt: Gratulation! Ihr habt den AI Business Escape Room gemeistert. Die Daten sind strukturiert,
+            die E-Mails formuliert und Excel ist nur leicht traumatisiert.</p>
+          </div>
         </div>
+
+        <div class="result-grid" id="endResultGrid"></div>
+
+        <div class="btn-row">
+          <button id="btnEndLeaderboard" class="btn btn-secondary">🏆 Rangliste anzeigen</button>
+          <button id="btnCopyResult" class="btn btn-ghost">📋 Ergebnis kopieren</button>
+          <button id="btnNewTeam" class="btn btn-primary">🔄 Neues Team starten</button>
+        </div>
+      </div>
     </section>
 
-    <!-- =========================================================================
-         LEADERBOARD / RANGLISTE
-         ========================================================================= -->
-    <section id="screen-leaderboard" class="screen">
-        <div class="leaderboard-card">
-            <h1>🏆 Rangliste</h1>
-            <p class="abi-quote">„Abi hat gerechnet. Und diesmal sogar richtig.“</p>
+    <!-- =========================================================
+         RANGLISTE / LEADERBOARD
+         ========================================================= -->
+    <section id="screenLeaderboard" class="screen hidden">
+      <button class="btn btn-link" id="btnBackFromLeaderboard">← Zurück</button>
 
-            <div class="leaderboard-toolbar">
-                <button id="btn-refresh-leaderboard" class="btn btn-ghost btn-sm">🔄 Aktualisieren</button>
-                <button id="btn-clean-old" class="btn btn-ghost btn-sm">🧹 Alte Ergebnisse löschen</button>
-                <button id="btn-leaderboard-back" class="btn btn-ghost btn-sm">← Zurück</button>
-            </div>
-
-            <div class="table-wrap">
-                <table class="leaderboard-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Team</th>
-                            <th>Punkte</th>
-                            <th>Zeit</th>
-                            <th>Hinweise</th>
-                            <th>Blöcke</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboard-body"></tbody>
-                </table>
-            </div>
-            <p id="leaderboard-empty" class="empty-note hidden">
-                Noch keine Teams in den letzten 2 Stunden. Startet ein Spiel!
-            </p>
+      <div class="section-head">
+        <h2>🏆 Rangliste</h2>
+        <div class="abi-box compact">
+          <div class="abi-avatar">🤖</div>
+          <div class="abi-bubble"><p>Abi hat gerechnet. Und diesmal sogar richtig.</p></div>
         </div>
+      </div>
+
+      <div class="btn-row">
+        <button id="btnRefreshLeaderboard" class="btn btn-ghost">🔄 Rangliste aktualisieren</button>
+        <button id="btnCleanOld" class="btn btn-ghost">🧹 Alte Ergebnisse löschen</button>
+      </div>
+
+      <div id="leaderboardTableWrap" class="table-wrap"></div>
     </section>
 
-    <!-- =========================================================================
-         ADMINBEREICH (Modal/Overlay)
-         ========================================================================= -->
-    <div id="admin-overlay" class="overlay hidden">
-        <div class="overlay-card admin-card">
-            <button class="overlay-close" id="btn-close-admin" title="Schliessen">✕</button>
-            <h2>🔒 Adminbereich</h2>
+    <!-- =========================================================
+         ADMINBEREICH
+         ========================================================= -->
+    <section id="screenAdmin" class="screen hidden">
+      <button class="btn btn-link" id="btnBackFromAdmin">← Zurück</button>
+      <div class="card admin-card">
+        <h2>🛠️ Adminbereich (Moderation)</h2>
 
-            <!-- Login -->
-            <div id="admin-login">
-                <label for="admin-pw">Passwort</label>
-                <div class="answer-row">
-                    <input type="password" id="admin-pw" placeholder="Passwort" autocomplete="off">
-                    <button id="btn-admin-login" class="btn btn-primary">Anmelden</button>
-                </div>
-                <p id="admin-login-msg" class="answer-feedback"></p>
-            </div>
-
-            <!-- Panel -->
-            <div id="admin-panel" class="hidden">
-                <div class="admin-tabs">
-                    <button class="admin-tab active" data-tab="solutions">Lösungen &amp; Hinweise</button>
-                    <button class="admin-tab" data-tab="teams">Teams</button>
-                    <button class="admin-tab" data-tab="danger">Verwaltung</button>
-                </div>
-
-                <div id="admin-tab-solutions" class="admin-tab-content active"></div>
-
-                <div id="admin-tab-teams" class="admin-tab-content">
-                    <label class="admin-checkbox">
-                        <input type="checkbox" id="admin-show-old"> Auch ältere Teams (&gt; 2 Std.) anzeigen
-                    </label>
-                    <div id="admin-teams-list" class="admin-teams-list"></div>
-                </div>
-
-                <div id="admin-tab-danger" class="admin-tab-content">
-                    <p class="admin-hint">Diese Aktionen betreffen die gespeicherte Rangliste.</p>
-                    <button id="btn-admin-clean-old" class="btn btn-ghost">🧹 Nur alte Ergebnisse löschen</button>
-                    <button id="btn-admin-reset" class="btn btn-danger">🗑️ Rangliste komplett zurücksetzen</button>
-                </div>
-            </div>
+        <!-- Login -->
+        <div id="adminLogin">
+          <label for="adminPassword" class="field-label">Passwort</label>
+          <input id="adminPassword" type="password" class="text-input" placeholder="Passwort eingeben" />
+          <div class="btn-row">
+            <button id="btnAdminLogin" class="btn btn-primary">Anmelden</button>
+          </div>
+          <p id="adminLoginFeedback" class="feedback"></p>
         </div>
-    </div>
 
-    <!-- =========================================================================
-         TOAST / KURZE HINWEISE
-         ========================================================================= -->
-    <div id="toast" class="toast hidden"></div>
+        <!-- Admininhalt -->
+        <div id="adminContent" class="hidden">
+          <div class="admin-toolbar">
+            <label class="checkbox">
+              <input type="checkbox" id="adminShowOld" /> Ältere Teams (älter als 2 Std.) anzeigen
+            </label>
+            <button id="btnResetLeaderboard" class="btn btn-danger">Rangliste zurücksetzen</button>
+            <button id="btnDeleteAll" class="btn btn-danger">Alle Ergebnisse löschen</button>
+            <button id="btnDeleteOld" class="btn btn-ghost">Nur alte Ergebnisse löschen</button>
+          </div>
 
-    <script src="script.js"></script>
+          <h3>Teams verwalten</h3>
+          <div id="adminTeamsWrap" class="table-wrap"></div>
+
+          <h3>Lösungen &amp; Hinweise</h3>
+          <div id="adminSolutions" class="admin-solutions"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================
+       FOOTER mit verstecktem Admin-Zugang
+       ========================================================= -->
+  <footer class="footer">
+    <span>AI Playground Day at SWICA · Fiktives Demo-Spiel, keine echten Daten.</span>
+    <button id="btnAdmin" class="admin-link">Admin</button>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
